@@ -1,4 +1,4 @@
-# Cacharrotes
+# Caxi-Vaxi
 
 <img src="marca/cachalote_cacharros.svg" width="160" alt="A sperm whale spouting a desk lamp, a chair and a vase">
 
@@ -11,14 +11,17 @@ lots are worth a look.
 It is not a marketplace, a price comparison site, or a reselling tool. One user, me.
 
 The name started as CazaLotes, "lot hunter", which sounds like *cachalote*, sperm whale.
-*Cacharro* is what Venezuelans call any old thing, so Cacharrotes is big old things, lots
-and a whale at once. The repository keeps its original name.
+Then it was Cacharrotes, from *cacharro*, what Venezuelans call any old thing. Now it is
+Caxi-Vaxi: *cachivaches*, odds and ends, said the way *wabi-sabi* sounds, because the
+things worth keeping are the old, worn and slightly imperfect ones. The repository keeps
+its original name.
 
 ## What it does
 
 **Reads catalogues.** Five Madrid auction houses (Durán, Sala Retiro, Segre, Ansorena,
-Alcalá), three Shopify shops (La Basílica, Odalys, The Oblist), Pamono, 1stDibs, and Etsy
-through its API.
+Alcalá), three Shopify shops (La Basílica, Odalys, The Oblist), Pamono, 1stDibs, Etsy and
+eBay through their APIs, and the Wallapop pages its `robots.txt` allows: single listings,
+seller profiles and its themed landing pages.
 
 **Scores them against my taste**, which lives in `perfil.py`: Shaker, Barragán, Donald Judd,
 Vienna Secession, Danish teak, Venezuelan naive painters, sculpture and busts. And what I
@@ -51,8 +54,10 @@ useful. One that tells you who painted something is lying to you.
 
 **It does not scrape anything that asked not to be scraped.** The five auction houses publish
 `robots.txt` files that allow everything. Wallapop forbids `/search` and any URL with a query
-string, so there is no adapter for Wallapop and there will not be one. Etsy and Mercado Libre
-have official APIs, which is why I am applying for keys instead of working around them.
+string, so its search is never touched, and neither is its internal search API, which only
+answers clients pretending to be Chrome. What it reads are the pages `robots.txt` allows:
+listings I saved, sellers I follow and a few themed landing pages. Etsy and eBay have
+official APIs, which is why they are read with keys instead of worked around.
 
 Everything runs without logging in. One request every three seconds, one pass a day, an
 identifiable User-Agent with a real contact address, a full stop on any 403, and no
@@ -69,12 +74,17 @@ cp config.py config_local.py    # put your own contact address in it
 .venv/bin/python shopify.py          # La Basílica, Odalys and The Oblist
 .venv/bin/python tiendas.py          # Pamono and 1stDibs
 .venv/bin/python etsy.py             # Etsy, through its official API (needs keys, see below)
+.venv/bin/python ebay.py             # eBay.es, through its official API (needs keys, see below)
+.venv/bin/python wallapop.py         # Wallapop: saved listings, followed sellers, landing pages
 .venv/bin/python vista.py            # build the page: datos/vista.html
 open datos/vista.html                # browse, search, vote
 
 .venv/bin/python run.py --informe    # re-rank what is already stored, in the terminal
 .venv/bin/python run.py --historico  # also pull the past-sales archive (hours, do it once)
 .venv/bin/python marketplaces.py     # build manual search links for sites with no API
+
+.venv/bin/pip install pytest
+.venv/bin/python -m pytest tests     # eBay and Wallapop readers, no network
 ```
 
 ## Etsy
@@ -102,6 +112,62 @@ scores for the top two and is flagged. English catalogue vocabulary ("in the sty
 harmless uses ("we never sell reproductions", "reproduction cloth cord"). Etsy's own size
 fields are usually empty, so measurements are also read from labelled text in the
 description ("height 81.5 cm, width 55 cm").
+
+## eBay
+
+eBay.es is read through the official Browse API, with an application token (client
+credentials, no eBay login). It needs the App ID and Cert ID of a production keyset in
+`config_local.py` as `EBAY_CLIENT_ID` and `EBAY_CLIENT_SECRET`. The searches are in Spanish,
+capped at 900 €, for pieces located in Spain; `ebay.py --ue` widens that to the EU. Sizes
+only come with the full listing, so the reader fetches those twenty at a time and reads
+width, height and depth from eBay's item specifics, falling back to the description.
+
+eBay's API License Agreement (read 13 October 2026) shapes four things:
+
+- Listing data may not be shown more than six hours older than on eBay. `datos/ebay.json`
+  is overwritten on every run, `vista.py` refuses it after six hours, and the page itself
+  hides eBay listings once their lookup is six hours old. Every eBay card says how long ago
+  it was fetched.
+- eBay content may not be mixed with other listings. eBay never appears in the main grid;
+  it shows up only when "eBay" is picked in the source menu, and then on its own. The
+  sharing page leaves it out.
+- No eBay user IDs may be stored. The reader keeps the piece and drops the seller entirely,
+  which is also what the "Not persisting eBay data" exemption from eBay's account-deletion
+  notifications declares.
+- eBay data may not be used to model prices, so it never feeds `comparables.py`.
+
+The footer carries a trademark notice next to Etsy's.
+
+## Wallapop
+
+Wallapop's `robots.txt` forbids `/search`, `/app/` and anything with a `?`, and allows the
+rest. Three kinds of page are read, and all three carry their data in the `__NEXT_DATA__`
+block, so no JavaScript runs:
+
+- **Listings I saved** (`WALLAPOP_ARTICULOS` in `config_local.py`): price, description,
+  condition, location, and whether it is reserved or sold.
+- **Sellers I follow** (`WALLAPOP_VENDEDORES`): a profile shows the seller's first 40
+  listings. The rest would need a `?` or the API, so for a big seller that is all there is.
+- **Themed landing pages** (`WALLAPOP_PORTADAS`, with fifteen Madrid pages by default:
+  sideboards, chests of drawers, armchairs, desk lamps, mirrors, sculpture and so on):
+  Wallapop publishes these for search engines, 80 listings each. It only makes them for
+  popular searches, so "silla thonet" or "busto" have none. Each page links to related
+  ones; `wallapop.py --descubrir` tries the ones that sound like my taste and adds the
+  ones that exist to the daily pass.
+
+Slugs or full URLs pasted from the browser both work. One pass a day, eighty pages at most,
+three seconds apart, and a full stop on any 403, keeping the previous pass. Each pass
+overwrites `datos/wallapop.json` and compares it with the last one: price drops (which count
+as an opportunity, like a shop's markdown), newly reserved or sold pieces, saved listings
+that disappeared, and new listings from a followed seller. Changes are printed at the end.
+
+Wallapop sellers write sizes number first ("190cm ancho x 42cm fondo") and paste tag lists
+for search ("space age, minimalista, retro, Danish..." or "tags: ..."). Both are handled.
+
+Wallapop's terms of use (3.1.2, points 15 and 17) forbid bots even where `robots.txt`
+allows them. This is one person's moderate personal use and I accept that risk. To find new
+pieces beyond these pages, the prefilled search link on the page and the app's own "Guardar
+búsqueda" alerts do the rest.
 
 ## Pamono, The Oblist and 1stDibs
 
@@ -131,28 +197,34 @@ products are skipped; they used to be marked "unsold", which was backwards.
 
 ## The page
 
-`vista.py` writes one self-contained HTML file. Everything on sale that does not clash
-outright with my taste goes in, about 4,000 lots, drawn 120 at a time.
+`vista.py` writes one self-contained HTML file that works as a single search engine over every
+source: type "silla", set the limits, and see the chairs from the auction houses, the shops,
+Pamono, 1stDibs, Etsy, eBay and Wallapop at once, instead of going site by site. About 15,800
+pieces, drawn 60 at a time as you scroll.
 
-The search panel takes a brief the way I would say it out loud: what kind of thing
+Europe only: anything known to be elsewhere (Odalys in Caracas, Etsy shops in the US) is left
+out, and the country chips narrow it further. A piece whose source does not say where it is
+(1stDibs, The Oblist, most of Pamono) shows under Europe but not under a single country.
+Reserved Wallapop listings are left out.
+
+Each card says only facts about the piece: the portal, where it is, the title, year,
+dimensions, materials, price and shipping cost. Anything the source does not give is simply not
+mentioned. The only vote is a like; liked pieces can be shown on their own.
+
+The search panel ("Filtros") borrows its structure from Pamono and 1stDibs: what kind of thing
 (the page expands "storage" into cómoda, cajonera, aparador, credenza and the rest of the
-catalogue vocabulary), colour, width, height and depth separately, whether it has to fit
-through a door, a ceiling on the real cost with the premium included, materials, period,
-and words to exclude. Briefs can be saved by name.
+catalogue vocabulary), a minimum and maximum price, width, height and depth separately, whether
+it has to fit through a door, materials, period, colour, marked-down only, and words to exclude.
+Results sort by relevance (the taste profile), newest, or price. Briefs can be saved by name.
 
-Under the panel, the same search is offered as ready-made links to Catawiki, Wallapop,
-Milanuncios, eBay, Etsy, Vinted and Todocolección, with the query and the price ceiling
-already filled in. Those sites cannot be read automatically, but they can be opened in one
-click. Catawiki sits behind Akamai and returns 403 to any automated request, `robots.txt`
-included, so it stays manual; its own "Guardar búsqueda" sends alerts. Its buyer fee is 9%
-plus a fixed 3 €, VAT included (buyer terms, September 2026).
+When there is a query, the same search is offered as ready-made links to Catawiki, Wallapop,
+Milanuncios, eBay, Etsy, Vinted, Pamono, 1stDibs and The Oblist. Catawiki sits behind Akamai and
+returns 403 to any automated request, `robots.txt` included, so it stays manual; its own
+"Guardar búsqueda" sends alerts. Its buyer fee is 9% plus a fixed 3 €, VAT included.
 
-Each lot shows four separate scores (taste, opportunity, logistics, confidence) rather than
-one opaque number, why it matched, and what the catalogue wording gives away. Votes are kept
-in the browser and exported as JSON, which is how the taste profile gets corrected.
-
-Photographs come at 500 px in the grid and at full size in the detail view. The listing
-pages only link a 260 px thumbnail, which is why an earlier version looked blurry.
+The look follows my Juddaun design system (Judd plus Braun: repeated objects on a quiet field,
+1px rules, one accent, no emoji) in a palette I call Klein: white, cool greys and one electric
+blue. The audit behind the current version is in `AUDITORIA-DISENO.md`.
 
 ## Sharing a search
 
@@ -174,6 +246,10 @@ write there keeps their votes on their phone and can copy the list to send it.
 | `duran.py` | Durán loads lots over AJAX and needs its own adapter |
 | `shopify.py` | Shops with an open `products.json`, including The Oblist |
 | `tiendas.py` | Pamono and 1stDibs |
+| `etsy.py` | Etsy, through its API |
+| `ebay.py` | eBay.es, through its API; kept apart on the page |
+| `wallapop.py` | Wallapop listings, sellers and landing pages, and what changed since last time |
+| `tests/` | The eBay and Wallapop readers against made-up pages, no network |
 | `compartir.py` | A search as a phone page to share and vote on |
 | `marca/` | The whale, in two sizes |
 | `puntuar.py` | Scoring, and the catalogue-vocabulary flags |
@@ -194,8 +270,9 @@ match my taste, mostly sculpture, painting and ceramics. For mid-century furnitu
 no base to compare against yet.
 
 The storage I am actually looking for is rare in these seven sources: nine lots out of
-4,334 at last count. For that kind of piece the private-sale sites are where the stock is,
-and those are the ones that cannot be read.
+4,334 at last count. For that kind of piece the private-sale sites are where the stock is.
+eBay and part of Wallapop can now be read, but Wallapop only through the pages listed
+above, never its search.
 
 The taste profile is my reading of my own taste, which is not the same as my taste. It gets
 better when I feed it things I actually chose.

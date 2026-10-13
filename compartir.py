@@ -13,7 +13,8 @@ Por que asi y no con la pagina de siempre:
     cada pieza enlaza a ella. Esto es solo para esta pagina privada; el
     rastreador sigue sin guardar fotos.
   - Etsy NO entra: sus condiciones de API prohiben mostrar datos de mas de 24 h,
-    y una pagina publicada se queda vieja.
+    y una pagina publicada se queda vieja. eBay tampoco, por lo mismo (6 h) y
+    porque su licencia prohibe mezclar sus anuncios con los de otras fuentes.
   - Los votos van al almacen compartido del Artifact (capacidad db), cada
     persona en su propio documento. Si quien vota no puede escribir ahi (le
     llego un enlace publico, o no tiene cuenta), se guardan en su telefono y
@@ -43,11 +44,12 @@ from config import UA
 from plantilla import PLANTILLA
 from puntuar import todos_los_vivos
 from scraper import DIR_DATOS
+import wallapop
 from vista import preparar, svg
 
 ANCHO, ALTO = 220, 275          # miniatura 4:5
 COLS = FILAS = 10               # cien por mosaico
-FUERA = {"etsy"}                # fuentes que no pueden ir en una pagina publicada
+FUERA = {"etsy", "ebay"}        # fuentes que no pueden ir en una pagina publicada
 
 
 def plano(s):
@@ -94,8 +96,11 @@ def clave(url):
 
 def seleccion():
     lotes = json.load(open(os.path.join(DIR_DATOS, "lotes.json"), encoding="utf-8"))
+    de_wallapop, _ = wallapop.cargar()
+    lotes = lotes + [l for l in de_wallapop if not l.get("reservado")]
     lotes = [l for l in lotes if l.get("casa") not in FUERA]
-    datos = preparar(todos_los_vivos(lotes))
+    # solo Europa, como la pagina principal
+    datos = [d for d in preparar(todos_los_vivos(lotes)) if d.get("eu") is not False]
     si, no, minimo = reglas_almacenaje()
     out = []
     for d in datos:
@@ -138,7 +143,7 @@ def url_miniatura(d):
     return u
 
 
-def construir(nombre="muebles-de-guardar", titulo="Cacharrotes de guardar"):
+def construir(nombre="muebles-de-guardar", titulo="Caxi-Vaxi de guardar"):
     piezas = seleccion()
     carpeta = os.path.join(DIR_DATOS, "compartir", nombre)
     os.makedirs(carpeta, exist_ok=True)
@@ -152,10 +157,10 @@ def construir(nombre="muebles-de-guardar", titulo="Cacharrotes de guardar"):
     fallos = sum(1 for m in minis if m is None)
     print(f"  {len(minis) - fallos} miniaturas en {time.time() - t0:.0f} s ({fallos} sin foto)")
 
-    vacia = Image.new("RGB", (ANCHO, ALTO), (226, 223, 215))
+    vacia = Image.new("RGB", (ANCHO, ALTO), (244, 244, 245))
     n_mosaicos = (len(piezas) + COLS * FILAS - 1) // (COLS * FILAS)
     for m in range(n_mosaicos):
-        lienzo = Image.new("RGB", (ANCHO * COLS, ALTO * FILAS), (226, 223, 215))
+        lienzo = Image.new("RGB", (ANCHO * COLS, ALTO * FILAS), (244, 244, 245))
         for j in range(COLS * FILAS):
             i = m * COLS * FILAS + j
             if i >= len(piezas):
@@ -170,8 +175,8 @@ def construir(nombre="muebles-de-guardar", titulo="Cacharrotes de guardar"):
         m = re.search(r"\((\d+) -> (\d+) EUR\)", rebaja)
         registros.append({
             "k": clave(d["url"]), "t": d["titulo"], "p": round(d["salida"]),
-            "s": d["grupo"], "d": d.get("dims") or "", "w": d.get("donde") or "",
-            "e": d.get("epoca") or d.get("periodo") or "", "u": d["url"],
+            "s": d["grupo"], "d": d.get("dims") or "", "w": d.get("lugar") or "",
+            "e": d.get("ano") or "", "u": d["url"],
             "g": d["g"], "c": subtipo(d["titulo"]),
             "r": [int(m.group(1)), int(m.group(2))] if m else None,
             "f": 0 if minis[i] is None else 1,
@@ -191,23 +196,23 @@ def construir(nombre="muebles-de-guardar", titulo="Cacharrotes de guardar"):
 PAGINA = r"""<title>__TITULO__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Archivo+Narrow:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap">
 <style>
-/* Una rejilla de fichas para el pulgar: foto, precio, dos botones. El detalle
-   sube desde abajo. Mismos colores que Cacharrotes. */
+/* Una rejilla de fichas para el pulgar: foto, precio y un corazon. El detalle
+   sube desde abajo. Misma paleta que Caxi-Vaxi (Azul Klein). */
 :root{
-  --yeso:#eceae4; --caja:#ffffff; --tinta:#14130f; --gris:#5d5a54; --borde:#d6d2c9;
-  --muro:#2e4a52; --muro-tinta:#f3f1ea; --rosa:#a8423b; --verde:#2f6b4f; --hueco:#2e4a52;
-  --ui:'Archivo',system-ui,-apple-system,sans-serif;
-  --etq:'Archivo Narrow','Archivo',system-ui,sans-serif;
+  --yeso:#F4F4F5; --caja:#FFFFFF; --tinta:#0A0A0B; --gris:#52525B; --borde:#E4E4E7;
+  --muro:#FFFFFF; --muro-tinta:#0A0A0B; --rosa:#1E3BFF; --verde:#1E3BFF; --hueco:#FFFFFF;
+  --ui:'Instrument Sans',system-ui,-apple-system,sans-serif;
+  --etq:'Instrument Sans',system-ui,-apple-system,sans-serif;
 }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
-  --yeso:#14130f; --caja:#1c1a16; --tinta:#eeece6; --gris:#a8a39a; --borde:#2d2a24;
-  --muro:#1d3238; --muro-tinta:#dfe6e5; --rosa:#d9705d; --verde:#6cb795; --hueco:#1d3238;
+  --yeso:#0B0B0D; --caja:#161618; --tinta:#F4F4F5; --gris:#A1A1AA; --borde:#26262B;
+  --muro:#0B0B0D; --muro-tinta:#F4F4F5; --rosa:#7286FF; --verde:#7286FF; --hueco:#0B0B0D;
   color-scheme:dark; }}
 :root[data-theme="dark"]{
-  --yeso:#14130f; --caja:#1c1a16; --tinta:#eeece6; --gris:#a8a39a; --borde:#2d2a24;
-  --muro:#1d3238; --muro-tinta:#dfe6e5; --rosa:#d9705d; --verde:#6cb795; --hueco:#1d3238;
+  --yeso:#0B0B0D; --caja:#161618; --tinta:#F4F4F5; --gris:#A1A1AA; --borde:#26262B;
+  --muro:#0B0B0D; --muro-tinta:#F4F4F5; --rosa:#7286FF; --verde:#7286FF; --hueco:#0B0B0D;
   color-scheme:dark; }
 *{box-sizing:border-box}
 body{background:var(--yeso);color:var(--tinta);font-family:var(--ui);font-size:14px;margin:0}
@@ -220,8 +225,7 @@ a{color:inherit}
 .fila1{display:flex;align-items:center;gap:10px}
 .ballena{width:40px;display:inline-flex;flex:none}
 .ballena svg{width:100%;height:auto;display:block}
-h1{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em;text-transform:uppercase;
-  line-height:1}
+h1{margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em;line-height:1}
 h1 em{font-style:normal;opacity:.55}
 .cuenta{margin-left:auto;font-family:var(--etq);font-size:12px;letter-spacing:.04em;
   font-variant-numeric:tabular-nums;text-align:right;opacity:.85}
@@ -231,10 +235,14 @@ h1 em{font-style:normal;opacity:.55}
 .filtros{display:flex;gap:6px;overflow-x:auto;padding:8px 0 10px;scrollbar-width:none}
 .filtros::-webkit-scrollbar{display:none}
 .chip{flex:none;font-family:var(--etq);font-size:12.5px;letter-spacing:.03em;padding:7px 11px;
-  border:1px solid rgba(255,255,255,.28);background:transparent;color:var(--muro-tinta);
+  border:1px solid var(--borde);background:transparent;color:var(--muro-tinta);
   border-radius:999px;cursor:pointer;white-space:nowrap}
 .chip.on{background:var(--muro-tinta);color:var(--muro);border-color:var(--muro-tinta)}
-.sep{flex:none;width:1px;background:rgba(255,255,255,.25);margin:4px 2px}
+.sep{flex:none;width:1px;background:var(--borde);margin:4px 2px}
+.muro{border-bottom:1px solid var(--borde)}
+.co{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-4px}
+.v.si.on .co{fill:currentColor}
+.cargando{text-align:center;color:var(--gris);padding:48px 16px}
 
 .barra{display:flex;gap:8px;padding:12px 16px 4px;align-items:center;flex-wrap:wrap}
 .barra input{flex:1;min-width:0;font:inherit;font-size:15px;padding:9px 11px;border:1px solid var(--borde);
@@ -298,7 +306,7 @@ h1 em{font-style:normal;opacity:.55}
 <header class="muro">
   <div class="fila1">
     <span class="ballena" aria-hidden="true">__BALLENA__</span>
-    <h1>Cacharr<em>otes</em></h1>
+    <h1>Caxi-Vaxi</h1>
     <div class="cuenta" id="cuenta">cargando…</div>
   </div>
   <div class="quienes" id="quienes"></div>
@@ -314,6 +322,7 @@ h1 em{font-style:normal;opacity:.55}
   </select>
 </div>
 <div id="aviso"></div>
+<div class="cargando" id="cargando">Cargando las piezas, tarda unos segundos…</div>
 <main class="rejilla" id="rejilla" aria-live="polite"></main>
 <div class="nada" id="nada" hidden>Nada con estos filtros. Quita alguno.</div>
 <button class="mas" id="mas" hidden>ver más</button>
@@ -326,7 +335,7 @@ const plano=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u0
 const TIPOS=[['','todo'],['comoda','cómodas'],['aparador','aparadores'],['armario','armarios'],
   ['alto','altos y vitrinas'],['bar','mueble bar'],['cabinet','cabinets']];
 const PRECIOS=[[0,'cualquier precio'],[200,'hasta 200 €'],[400,'hasta 400 €'],[600,'hasta 600 €']];
-const E={tipo:'',tope:0,q:'',orden:'g',gustan:false,ocultarNo:true};
+const E={tipo:'',tope:0,q:'',orden:'g',gustan:false,ocultarNo:false};
 let P=[], META={}, vistos=[], pintadas=0;
 const POR_TANDA=60;
 
@@ -388,7 +397,7 @@ async function conectar(){
 function pintarQuienes(){
   const ids=Object.keys(otros).filter(id=>Object.values(otros[id]).some(v=>v==='si'));
   const q=$('#quienes'); q.textContent='';
-  if(!ids.length){ q.textContent=modo==='compartido'?'Toca ♥ en lo que te guste. Lo vemos los dos.':''; return; }
+  if(!ids.length){ q.textContent=modo==='compartido'?'Toca el corazón en lo que te guste. Lo vemos los dos.':''; return; }
   q.append('Han elegido: ');
   ids.forEach(id=>{ const p=perfiles[id]||{}; const i=document.createElement('img');
     i.src=p.avatarUrl||''; i.alt=''; i.title=p.name||'alguien'; q.append(i);
@@ -401,17 +410,19 @@ function pintarAviso(soyDueno){
     a.innerHTML='<div class="aviso"><b>Para que ella vote desde su móvil</b>, compártela invitándola por correo como Editora. '
       +'Con un enlace público solo podría mirar.</div>'; return; }
   if(modo==='compartido'){ a.innerHTML=''; return; }
-  a.innerHTML='<div class="aviso"><b>Tus votos se guardan en este teléfono.</b> Cuando termines, '
-    +'copia tu lista y mándasela a Diego.<br><button id="copiar">Copiar mis favoritos</button></div>';
+  a.innerHTML='<div class="aviso"><b>No hace falta cuenta ni iniciar sesión.</b> Si claude.ai te pide '
+    +'«Sign in», ignóralo: la página funciona igual. Toca el corazón en lo que te guste y, al terminar, '
+    +'envíale tu lista a Diego.<br><button id="copiar">Enviar mi lista</button></div>';
   $('#copiar').onclick=copiar;
 }
 function copiar(){
   const fav=P.filter(x=>mios[x.k]==='si');
-  const txt=fav.length?('Mis favoritos de Cacharrotes ('+fav.length+'):\n\n'
-    +fav.map(x=>'• '+x.t+' · '+x.p+' €\n  '+x.u).join('\n')):'Aún no has marcado ninguno con ♥.';
-  const fin=()=>abrirHoja('<button class="cerrar" id="x" aria-label="Cerrar">×</button>'
+  const txt=fav.length?('Mis favoritos de Caxi-Vaxi ('+fav.length+'):\n\n'
+    +fav.map(x=>'- '+x.t+' · '+x.p+' €\n  '+x.u).join('\n')):'Aún no has marcado ninguno con el corazón.';
+  const fin=()=>abrirHoja('<button class="cerrar" id="x" aria-label="Cerrar"><svg class="co" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>'
     +'<h2>Tu lista</h2><p class="meta">Si no se copió sola, mantén pulsado el texto y cópialo.</p>'
     +'<textarea class="copia" id="txt" readonly>'+esc(txt)+'</textarea>');
+  if(fav.length&&navigator.share){ navigator.share({title:'Mis favoritos de Caxi-Vaxi',text:txt}).catch(()=>{}); return; }
   try{ navigator.clipboard.writeText(txt).then(()=>{ fin(); $('#txt').insertAdjacentHTML('beforebegin','<p class="meta">Copiada. Pégala en WhatsApp.</p>'); },fin); }
   catch(e){ fin(); }
 }
@@ -423,8 +434,7 @@ function chips(){
     +'<span class="sep"></span>'
     +PRECIOS.map(([v,n])=>'<button class="chip'+(E.tope===v?' on':'')+'" data-tope="'+v+'">'+n+'</button>').join('')
     +'<span class="sep"></span>'
-    +'<button class="chip'+(E.gustan?' on':'')+'" data-gustan="1">♥ elegidos</button>'
-    +'<button class="chip'+(E.ocultarNo?' on':'')+'" data-ocultar="1">ocultar los “no”</button>';
+    +'<button class="chip'+(E.gustan?' on':'')+'" data-gustan="1">Favoritos</button>';
 }
 $('#filtros').addEventListener('click',e=>{
   const b=e.target.closest('.chip'); if(!b)return;
@@ -468,8 +478,7 @@ function ficha(x){
     +'<div class="cartela"><div class="precio">'+x.p+' €'+(x.r?' <s>'+x.r[0]+' €</s>':'')+'</div>'
     +'<div class="nombre">'+esc(x.t)+'</div><div class="meta">'+meta+'</div>'
     +'<div class="otros"></div>'
-    +'<div class="votos"><button class="v si" data-v="si" aria-label="Me gusta">♥</button>'
-    +'<button class="v no" data-v="no" aria-label="No me gusta">no</button></div></div></article>';
+    +'<div class="votos"><button class="v si" data-v="si" aria-label="Me gusta"><svg class="co" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Me gusta</button></div></div></article>';
 }
 function pintarVotos(el){
   const k=el.dataset.k, mio=mios[k];
@@ -479,7 +488,7 @@ function pintarVotos(el){
   o.textContent='';
   votosDe(k).filter(v=>v[1]==='si').forEach(([id])=>{ const p=perfiles[id]||{};
     const i=document.createElement('img'); i.src=p.avatarUrl||''; i.alt=''; o.append(i);
-    const s=document.createElement('span'); s.textContent='♥ '+((p.name||'alguien').split(' ')[0]); o.append(s); });
+    const s=document.createElement('span'); s.textContent='le gusta a '+((p.name||'alguien').split(' ')[0]); o.append(s); });
 }
 function mas(){
   const r=$('#rejilla'), hasta=Math.min(vistos.length,pintadas+POR_TANDA);
@@ -511,13 +520,12 @@ const TIENDA=u=>u.includes('pamono')?'Pamono':u.includes('1stdibs')?'1stDibs':u.
 function detalle(x){
   const filas=[['precio',x.p+' €'+(x.r?' (antes '+x.r[0]+' €)':'')],['medidas',x.d||'no las da'],
     ['época',x.e],['envía desde',x.w],['tienda',x.s]].filter(f=>f[1]);
-  abrirHoja('<button class="cerrar" id="x" aria-label="Cerrar">×</button>'
+  abrirHoja('<button class="cerrar" id="x" aria-label="Cerrar"><svg class="co" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>'
     +'<div class="foto" style="'+fondo(x)+'" role="img" aria-label="'+esc(x.t)+'"></div>'
     +'<h2>'+esc(x.t)+'</h2>'
     +'<dl>'+filas.map(f=>'<dt>'+f[0]+'</dt><dd>'+esc(f[1])+'</dd>').join('')+'</dl>'
-    +'<div data-k="'+x.k+'"><div class="otros"></div><div class="votos"><button class="v si" data-v="si">♥ me gusta</button>'
-    +'<button class="v no" data-v="no">no</button></div></div>'
-    +'<a class="ir" href="'+esc(x.u)+'" target="_blank" rel="noopener">Ver fotos en '+TIENDA(x.u)+' ↗</a>'
+    +'<div data-k="'+x.k+'"><div class="otros"></div><div class="votos"><button class="v si" data-v="si"><svg class="co" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> Me gusta</button></div></div>'
+    +'<a class="ir" href="'+esc(x.u)+'" target="_blank" rel="noopener">Ver fotos en '+esc(x.s||TIENDA(x.u))+'</a>'
     +'<p class="meta" style="margin-top:10px">El precio es sin envío. En subastas se suma la comisión de la casa.</p>');
   pintarVotos($('#velo [data-k]'));
 }
@@ -525,8 +533,8 @@ function detalle(x){
 /* ---------- arranque ---------- */
 fetch('piezas.json').then(r=>r.json()).then(j=>{
   META=j; P=j.piezas.map((x,i)=>({...x,i,_t:plano(x.t+' '+x.d+' '+x.e+' '+x.w+' '+x.s)}));
-  chips(); filtrar();
-}).catch(()=>{ $('#cuenta').textContent='no se pudieron cargar las piezas'; });
+  $('#cargando').hidden=true; chips(); filtrar();
+}).catch(()=>{ $('#cargando').textContent='No se pudieron cargar las piezas. Recarga la página.'; });
 pintarAviso(); conectar();
 </script>
 """

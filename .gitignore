@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 datos/
 config_local.py
+.DS_Store
+.claude/

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Genera datos/vista.html (Cacharrotes): la rejilla visual para escanear cientos de lotes rapido.
+Genera datos/vista.html (Caxi-Vaxi): la rejilla visual para escanear cientos de lotes rapido.
 
 Decisiones que vienen del brief de Diego:
   - La imagen manda. Todo lo demas es cartela.
@@ -25,6 +25,8 @@ from casas import CASAS
 from encargo import dimensiones
 from plantilla import PLANTILLA
 from puntuar import ranking, todos_los_vivos
+import ebay
+import wallapop
 from etsy import cargar_si_fresco
 from scraper import DIR_DATOS, despegar_br
 
@@ -151,6 +153,93 @@ def atributos(l):
     }
 
 
+# --------------------------------------------------------------------------
+# Donde esta la pieza: pais normalizado (ISO) y una etiqueta legible
+# --------------------------------------------------------------------------
+PAISES = {
+    "ES": "España", "FR": "Francia", "DE": "Alemania", "IT": "Italia", "NL": "Países Bajos",
+    "BE": "Bélgica", "PT": "Portugal", "GB": "Reino Unido", "IE": "Irlanda", "DK": "Dinamarca",
+    "SE": "Suecia", "NO": "Noruega", "FI": "Finlandia", "AT": "Austria", "CH": "Suiza",
+    "PL": "Polonia", "CZ": "Chequia", "HU": "Hungría", "GR": "Grecia", "LU": "Luxemburgo",
+    "SK": "Eslovaquia", "SI": "Eslovenia", "HR": "Croacia", "RO": "Rumanía", "BG": "Bulgaria",
+    "EE": "Estonia", "LV": "Letonia", "LT": "Lituania", "MT": "Malta", "CY": "Chipre",
+    "MC": "Mónaco", "IS": "Islandia", "RS": "Serbia", "UA": "Ucrania", "TR": "Turquía",
+    "US": "Estados Unidos", "CA": "Canadá", "VE": "Venezuela", "MX": "México", "AR": "Argentina",
+    "BR": "Brasil", "GB-": "Reino Unido", "AU": "Australia", "JP": "Japón", "CN": "China",
+    "IN": "India", "IL": "Israel", "ZA": "Sudáfrica",
+}
+EUROPA = {"ES", "FR", "DE", "IT", "NL", "BE", "PT", "GB", "IE", "DK", "SE", "NO", "FI", "AT", "CH",
+          "PL", "CZ", "HU", "GR", "LU", "SK", "SI", "HR", "RO", "BG", "EE", "LV", "LT", "MT", "CY",
+          "MC", "IS", "RS", "UA"}
+_POR_NOMBRE = {sin_tildes(v).lower(): k for k, v in PAISES.items()}
+_POR_NOMBRE.update({"holanda": "NL", "paises bajos": "NL", "inglaterra": "GB", "reino unido": "GB",
+                    "estados unidos": "US", "usa": "US", "república checa": "CZ", "republica checa": "CZ"})
+# Fuentes que solo venden desde un pais
+PAIS_DE_FUENTE = {"wallapop": "ES", "labasilica": "ES", "alcala": "ES", "salaretiro": "ES",
+                  "segre": "ES", "ansorena": "ES", "duran": "ES"}
+CIUDADES = {"caracas": "VE", "miami": "US", "madrid": "ES", "barcelona": "ES", "terrassa": "ES"}
+
+
+def pais(l):
+    """ISO del pais donde esta la pieza, o None si la fuente no lo dice."""
+    casa = l.get("casa")
+    if casa in PAIS_DE_FUENTE:
+        return PAIS_DE_FUENTE[casa]
+    u = (l.get("ubicacion") or "").strip()
+    if re.fullmatch(r"[A-Z]{2}", u):
+        return u
+    bajo = sin_tildes(u).lower()
+    if bajo in _POR_NOMBRE:
+        return _POR_NOMBRE[bajo]
+    for ciudad, iso in CIUDADES.items():
+        if bajo.startswith(ciudad):
+            return iso
+    return None
+
+
+def ubicacion_txt(l, iso):
+    """'Madrid, España', 'Francia' o None. Nada de basura del catalogo."""
+    nombre = PAISES.get(iso) if iso else None
+    u = (l.get("ubicacion") or "").strip()
+    if l.get("casa") in CASAS:
+        return "Madrid, España"
+    if not u or re.fullmatch(r"[A-Z]{2}", u) or sin_tildes(u).lower() in _POR_NOMBRE:
+        return nombre
+    ciudad = re.split(r"\s{1,}(?=[A-ZÁÉÍÓÚ]{3,})|[,(]", u)[0].strip()[:30]
+    if not nombre or sin_tildes(ciudad).lower() == sin_tildes(nombre).lower():
+        return ciudad or nombre
+    return f"{ciudad}, {nombre}"
+
+
+def sin_gritos(t):
+    """
+    "SILLAS CANTILEVER S78 DE THONET" -> "Sillas cantilever S78 de Thonet".
+    Un titulo casi todo en mayusculas se lee mal en la rejilla. Se baja a
+    minusculas y se respetan los codigos (S78, MB15) y los nombres propios
+    que la propia frase trae con mayuscula inicial... que en mayusculas no se
+    distinguen, asi que solo se recupera la primera letra.
+    """
+    letras = [c for c in t if c.isalpha()]
+    if len(letras) < 8 or sum(c.isupper() for c in letras) / len(letras) < 0.7:
+        return t
+    palabras = []
+    for w in t.split():
+        palabras.append(w if re.search(r"\d", w) else w.lower())
+    out = " ".join(palabras)
+    # mayuscula al empezar y despues de cada punto
+    return re.sub(r"(^|[.!?]\s+)([a-záéíóúñü])", lambda m: m.group(1) + m.group(2).upper(), out)
+
+
+def ano_txt(l, periodo):
+    """'Años 60', 's. XIX' o la epoca que da la fuente."""
+    if l.get("epoca_etsy"):
+        e = l["epoca_etsy"]
+        return re.sub(r"^(\d{2})(\d)0s$", lambda m: f"Años {m.group(2)}0" if m.group(1) == "19" else e, e)
+    if periodo and re.fullmatch(r"19\d0", periodo):
+        return f"Años {periodo[2:]}"
+    return periodo
+
+
 DIR_MARCA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "marca")
 
 
@@ -162,8 +251,8 @@ def svg(nombre):
 
 def favicon():
     from urllib.parse import quote
-    t = (svg("cachalote.svg").replace("currentColor", "#2e4a52")
-         .replace("var(--hueco,#2e4a52)", "#eceae4"))
+    t = (svg("cachalote.svg").replace("currentColor", "#0A0A0B")
+         .replace("var(--hueco,#2e4a52)", "#FFFFFF"))
     return "data:image/svg+xml," + quote(t)
 
 
@@ -199,13 +288,20 @@ def preparar(lotes):
         c = l.get("coste") or {}
         chica, grande = fotos(l.get("imagen"))
         grande = l.get("imagen_grande") or grande
+        iso = pais(l)
         out.append({
             "id": l["url"],
             "fuente": l["casa_nombre"],
             # para el desplegable: todo Etsy junto, no 1.400 tiendas sueltas
             "grupo": "Etsy" if l.get("casa") == "etsy" else l["casa_nombre"],
+            # eBay va aparte (su licencia prohibe mezclarlo con otras fuentes) y
+            # la pagina lo oculta cuando la consulta pasa de 6 h
+            "aparte": l.get("casa") == "ebay",
+            "obt": l.get("obtenido") if l.get("casa") == "ebay" else None,
+            "res": bool(l.get("reservado")),
+            "nuevo": bool(l.get("nuevo_de_vendedor")),
             "lote": l.get("lote"),
-            "titulo": despegar_br(l.get("titulo") or "sin titulo", l.get("texto"))[:140],
+            "titulo": sin_gritos(despegar_br(l.get("titulo") or "sin titulo", l.get("texto")))[:140],
             "salida": l.get("salida"),
             "total": c.get("total"),
             "recargo": c.get("recargo_pct"),
@@ -230,6 +326,14 @@ def preparar(lotes):
             "orig": l.get("precio_original"),
             "epoca": l.get("epoca_etsy"),
             "opq": s["op_por_que"],
+            # lo que ensena la ficha nueva: solo hechos de la pieza
+            "pais": iso,
+            "eu": iso in EUROPA if iso else None,
+            "lugar": ubicacion_txt(l, iso),
+            "ano": ano_txt(l, a["periodo"]),
+            "envio": l.get("envio"),
+            "antes": l.get("precio_anterior") if (l.get("precio_anterior") or 0) > (l.get("salida") or 0) else None,
+            "alta": l.get("primera_vez") or l.get("visto"),
         })
     return out
 
@@ -245,7 +349,7 @@ ATAJOS = {
 def escribir_atajos():
     for nombre, busqueda in ATAJOS.items():
         with open(os.path.join(DIR_DATOS, nombre + ".html"), "w", encoding="utf-8") as f:
-            f.write('<!doctype html><meta charset="utf-8"><title>Cacharrotes</title>'
+            f.write('<!doctype html><meta charset="utf-8"><title>Caxi-Vaxi</title>'
                     f'<meta http-equiv="refresh" content="0;url=vista.html#{busqueda}">'
                     f'<a href="vista.html#{busqueda}">Abrir la busqueda</a>')
 
@@ -262,8 +366,18 @@ def construir(minimo=None):
     de_etsy, estado_etsy = cargar_si_fresco()
     print(f"  {estado_etsy}: {len(de_etsy)} anuncios")
     lotes = lotes + de_etsy
+    # eBay, solo si la consulta tiene menos de 6 h (licencia de su API)
+    de_ebay, estado_ebay = ebay.cargar_si_fresco()
+    print(f"  {estado_ebay}: {len(de_ebay)} anuncios")
+    # Wallapop: la ultima pasada, sin lo vendido
+    de_wallapop, estado_wallapop = wallapop.cargar()
+    print(f"  {estado_wallapop}: {len(de_wallapop)} anuncios")
+    # Lo reservado en Wallapop no interesa: casi nunca vuelve a estar libre
+    lotes = lotes + de_ebay + [l for l in de_wallapop if not l.get("reservado")]
     elegidos = ranking(lotes, minimo=minimo) if minimo is not None else todos_los_vivos(lotes)
-    datos = preparar(elegidos)
+    # Solo Europa: lo que se sabe que esta fuera (Odalys Caracas, tiendas de
+    # Etsy en EE. UU.) no entra. Lo que no dice su pais se queda.
+    datos = [d for d in preparar(elegidos) if d["eu"] is not False]
     # "</" dentro del JSON cerraria la etiqueta <script> si un titulo lo trae
     carga = json.dumps(datos, ensure_ascii=False).replace("</", "<\\/")
     html = (PLANTILLA.replace("__BALLENA__", svg("cachalote.svg"))
@@ -272,7 +386,7 @@ def construir(minimo=None):
     html = html.replace("__DATOS__", carga)
     html = html.replace("__FECHA__", datetime.now().strftime("%d/%m/%Y %H:%M"))
     vivos = sum(1 for l in lotes if not l.get("historico"))
-    html = html.replace("__TOTAL__", str(vivos))
+    html = html.replace("__TOTAL__", f"{vivos:,}".replace(",", "."))
     salida = os.path.join(DIR_DATOS, "vista.html")
     with open(salida, "w", encoding="utf-8") as f:
         f.write(html)

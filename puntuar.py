@@ -242,7 +242,9 @@ def vigente(l, dias=4):
     # Pamono pone 2 o 3 EUR a las piezas sin precio publico: no son gangas
     if l.get("casa") == "pamono" and (l.get("salida") or 0) < 20:
         return False
-    if not l.get("precio_fijo") or l.get("casa") == "etsy":
+    # Etsy y eBay caducan por su cuenta: su archivo se rehace en cada pasada y
+    # vista.py lo descarta entero cuando es viejo (24 h y 6 h)
+    if not l.get("precio_fijo") or l.get("casa") in ("etsy", "ebay"):
         return True
     try:
         visto = datetime.fromisoformat(l["visto"])
