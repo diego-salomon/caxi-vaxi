@@ -230,10 +230,19 @@ blue. The audit behind the current version is in `AUDITORIA-DISENO.md`.
 ## Opening it from anywhere
 
 The page is private, not public. It is published to Cloudflare Pages at
-`caxi-vaxi.pages.dev`, behind Cloudflare Access: only the email addresses on the list (mine
-and my partner's) get in, with a six-digit code sent by email. `publicar.py` refuses to upload
-anything unless the address already answers with the Access login, so the page is never left
-open, not even for a minute.
+`caxi-vaxi.pages.dev`, and every request goes through `web/functions/_middleware.js` first:
+without the access key you only get the key form (a 401), never the data. The key is a secret
+of the Pages project (`CLAVE`) with a copy in `config_local.py`; once entered, a signed cookie
+keeps you in for six months. My partner and I share it.
+
+Why a key and not Cloudflare Access: Access asks for a card on file and permission to charge
+it beyond the free tier. This way the Cloudflare account stays on the free plan with no
+payment method, so nothing can ever be charged; past the free limits the page would simply
+stop answering for the day.
+
+`publicar.py` refuses to upload if the gate or the secret is missing, ships the gate and the
+page in the same deployment, and afterwards checks that the address without the key returns
+the form and not the page. `publicar.py --clave` uploads the key from `config_local.py`.
 
 `actualizar.py` is the scheduled job (`~/Library/LaunchAgents/com.diego.caxivaxi.plist`): at
 7:00 the full pass (auction houses, shops, Etsy, Wallapop, eBay), then at 13:00, 19:00 and
@@ -267,7 +276,8 @@ write there keeps their votes on their phone and can copy the list to send it.
 | `wallapop.py` | Wallapop listings, sellers and landing pages, and what changed since last time |
 | `tests/` | The eBay and Wallapop readers against made-up pages, no network |
 | `compartir.py` | A search as a phone page to share and vote on |
-| `publicar.py` | Uploads the private page to Cloudflare, only if Access protects it |
+| `publicar.py` | Uploads the private page to Cloudflare, behind its access key |
+| `web/functions/` | The gate: the access-key form in front of the page |
 | `actualizar.py` | The scheduled job: crawl, rebuild, upload |
 | `marca/` | The whale, in two sizes |
 | `puntuar.py` | Scoring, and the catalogue-vocabulary flags |

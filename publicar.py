@@ -1,87 +1,119 @@
 # -*- coding: utf-8 -*-
 """
-Sube la pagina a Cloudflare Pages, detras de Cloudflare Access.
+Sube la pagina a Cloudflare Pages, detras de una clave de acceso.
 
-Caxi-Vaxi no es publica: la direccion (caxi-vaxi.pages.dev) esta protegida
-por Cloudflare Access y solo entran los correos de la lista (Diego y su
-pareja). Se entra con un codigo de 6 digitos que llega por email.
+Caxi-Vaxi no es publica. Vive en https://caxi-vaxi.pages.dev, pero todo pasa
+por web/functions/_middleware.js: sin la clave solo se ve el formulario de
+entrada. La clave es un secreto del proyecto en Cloudflare (CLAVE) y una copia
+en config_local.py (CAXIVAXI_CLAVE), nunca en el repo.
+
+Por que una clave y no Cloudflare Access: Access exige guardar una tarjeta. Asi
+la cuenta sigue en el plan gratuito y sin metodo de pago: no se le puede cobrar.
 
 Lo que hace:
-  1. Copia datos/vista.html a datos/sitio/index.html, con una cabecera que
-     prohibe indexar y otra que no deja que nadie la meta en un iframe.
-  2. La sube con wrangler, la herramienta oficial de Cloudflare.
+  1. Copia datos/vista.html a datos/sitio/index.html.
+  2. Comprueba que el secreto CLAVE existe en Cloudflare (si no, no sube).
+  3. Sube con wrangler desde web/, que lleva la puerta (functions/).
+  4. Comprueba que, sin clave, la direccion devuelve el formulario y no la
+     pagina. Si no fuese asi, avisa a gritos.
 
-La sesion de wrangler vive en tu Mac (npx wrangler login), nunca en el repo.
-Si la proteccion de Access no esta puesta, NO sube nada.
+La sesion de wrangler vive en el Llavero del Mac (npx wrangler login), nunca en
+el repo.
 
 Uso:
     .venv/bin/python publicar.py            regenera la vista y la sube
     .venv/bin/python publicar.py --solo     sube la vista que ya hay
+    .venv/bin/python publicar.py --clave    sube a Cloudflare la clave de config_local.py
 """
 import os
 import shutil
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+RAIZ = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, RAIZ)
 from scraper import DIR_DATOS
 
 PROYECTO = "caxi-vaxi"
 DOMINIO = f"https://{PROYECTO}.pages.dev"
 SITIO = os.path.join(DIR_DATOS, "sitio")
-
-CABECERAS = """/*
-  X-Robots-Tag: noindex, nofollow
-  X-Frame-Options: DENY
-  Referrer-Policy: no-referrer
-  Cache-Control: no-cache
-"""
+WEB = os.path.join(RAIZ, "web")
+WRANGLER = ["npx", "--yes", "wrangler@4"]
 
 
-def protegida():
+def wrangler(*args, entrada=None):
+    return subprocess.run(WRANGLER + list(args), cwd=WEB, input=entrada,
+                          capture_output=True, text=True)
+
+
+def hay_clave():
+    r = wrangler("pages", "secret", "list", "--project-name", PROYECTO)
+    return r.returncode == 0 and "CLAVE" in r.stdout
+
+
+def subir_clave():
+    """Pone en Cloudflare la clave de config_local.py, sin mostrarla."""
+    import config_local
+    clave = getattr(config_local, "CAXIVAXI_CLAVE", "")
+    if len(clave) < 12:
+        sys.exit("Falta CAXIVAXI_CLAVE (12 caracteres o mas) en config_local.py")
+    r = wrangler("pages", "secret", "put", "CLAVE", "--project-name", PROYECTO, entrada=clave + "\n")
+    print("clave subida" if r.returncode == 0 else "no se pudo subir la clave:\n" + r.stderr[-400:])
+    return r.returncode == 0
+
+
+def cerrada(url=DOMINIO, intentos=8):
     """
-    Comprueba que el dominio pide inicio de sesion de Access antes de subir.
-    Una peticion sin sesion tiene que acabar en el login de Cloudflare Access
-    (cloudflareaccess.com), nunca en la pagina.
+    True si, sin cookie, la direccion responde con el formulario (401).
+    False solo si devuelve los datos de verdad sin clave. Justo despues de
+    subir, Cloudflare tarda unos segundos en propagar: se reintenta.
     """
-    req = urllib.request.Request(DOMINIO, method="GET", headers={"User-Agent": "caxi-vaxi-publicar"})
-
-    class SinRedireccion(urllib.request.HTTPRedirectHandler):
-        def redirect_request(self, *a, **k):
-            return None
-    try:
-        r = urllib.request.build_opener(SinRedireccion).open(req, timeout=20)
-        return False if r.status == 200 else None
-    except urllib.error.HTTPError as e:
-        destino = e.headers.get("Location", "")
-        return e.code in (302, 303) and "cloudflareaccess.com" in destino
-    except OSError:
-        return None   # todavia no existe o sin red: no hay nada expuesto
+    import time
+    for n in range(intentos):
+        try:
+            r = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "caxi-vaxi"}), timeout=30)
+            if "const DATOS" in r.read().decode("utf-8", "ignore"):
+                return False               # la pagina entera, sin clave: abierta
+        except urllib.error.HTTPError as e:
+            if e.code == 401 and 'name="clave"' in e.read().decode("utf-8", "ignore"):
+                return True
+        except OSError:
+            pass
+        time.sleep(8)
+    return None
 
 
 def preparar():
     os.makedirs(SITIO, exist_ok=True)
     shutil.copyfile(os.path.join(DIR_DATOS, "vista.html"), os.path.join(SITIO, "index.html"))
-    with open(os.path.join(SITIO, "_headers"), "w", encoding="utf-8") as f:
-        f.write(CABECERAS)
 
 
 def subir():
-    cmd = ["npx", "--yes", "wrangler@4", "pages", "deploy", SITIO,
-           "--project-name", PROYECTO, "--branch", "main", "--commit-dirty=true"]
-    return subprocess.run(cmd, cwd=os.path.dirname(os.path.abspath(__file__))).returncode
+    r = subprocess.run(WRANGLER + ["pages", "deploy", SITIO, "--project-name", PROYECTO,
+                                   "--branch", "main", "--commit-dirty=true"], cwd=WEB)
+    return r.returncode
 
 
 if __name__ == "__main__":
+    if "--clave" in sys.argv:
+        sys.exit(0 if subir_clave() else 1)
+    if not os.path.exists(os.path.join(WEB, "functions", "_middleware.js")):
+        sys.exit("!! Falta web/functions/_middleware.js: sin puerta no se sube nada.")
+    if not hay_clave():
+        sys.exit("!! El proyecto no tiene la clave CLAVE en Cloudflare. No se sube nada.\n"
+                 "   Ponla con: .venv/bin/python publicar.py --clave")
     if "--solo" not in sys.argv:
         import vista
         vista.construir()
-    # Solo se sube si la direccion ya pide el login de Access. Sin eso, ni la
-    # primera vez: la pagina quedaria abierta a cualquiera con el enlace.
-    if protegida() is not True:
-        print("!! La direccion no esta protegida por Cloudflare Access. No se sube nada.\n"
-              "   Revisa Cloudflare Zero Trust > Access > Applications.")
-        sys.exit(1)
     preparar()
-    sys.exit(subir())
+    codigo = subir()
+    if codigo == 0:
+        estado = cerrada()
+        if estado is False:
+            print("!! ATENCION: la pagina responde SIN clave. Revisa web/functions/_middleware.js.")
+            sys.exit(2)
+        print("  comprobado: sin clave solo se ve el formulario" if estado else
+              "  (no se pudo comprobar la puerta ahora; se revisa en la siguiente pasada)")
+    sys.exit(codigo)
