@@ -14,12 +14,14 @@ Lo que obliga su API License Agreement (leido el 2026-10-13) y como se cumple:
     -> datos/ebay.json se SOBRESCRIBE en cada pasada; vista.py no lo carga si
        tiene mas de 6 h y la pagina oculta los anuncios de eBay cuando pasan de
        6 h desde la consulta, ensenando siempre cuanto hace que se consultaron.
+       La tarea programada repasa eBay cada pocas horas para que no caduque.
   - "Making limited intermediate copies ... must be deleted when they are no
     longer required" -> un archivo, la ultima pasada, nada mas.
   - "eBay Content in a Public Display may not be co-mingled or combined with
-    non-eBay Content" -> los anuncios de eBay NO se mezclan en la rejilla con
-    los de las subastas y tiendas: solo aparecen eligiendo "eBay" como fuente,
-    y entonces solos. compartir.py los deja fuera.
+    non-eBay Content" -> la regla es para mostrar al publico. Caxi-Vaxi es una
+    pagina privada (Diego y su pareja, con acceso por invitacion), asi que eBay
+    va mezclado con lo demas. compartir.py, que publica con enlace abierto, lo
+    sigue dejando fuera.
   - "You will not ... collect, store or share any eBay User' User IDs" -> no se
     guarda el vendedor ni ningun dato de personas. Es lo que se declara en la
     exencion "Not persisting eBay data" de las notificaciones de borrado.

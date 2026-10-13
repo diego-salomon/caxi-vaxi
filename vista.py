@@ -294,9 +294,10 @@ def preparar(lotes):
             "fuente": l["casa_nombre"],
             # para el desplegable: todo Etsy junto, no 1.400 tiendas sueltas
             "grupo": "Etsy" if l.get("casa") == "etsy" else l["casa_nombre"],
-            # eBay va aparte (su licencia prohibe mezclarlo con otras fuentes) y
-            # la pagina lo oculta cuando la consulta pasa de 6 h
-            "aparte": l.get("casa") == "ebay",
+            # eBay se mezcla con todo (la pagina es privada: su regla de no
+            # mezclar es para mostrar al publico), pero la pagina oculta cada
+            # anuncio cuando su consulta pasa de 6 h
+            "ebay": l.get("casa") == "ebay",
             "obt": l.get("obtenido") if l.get("casa") == "ebay" else None,
             "res": bool(l.get("reservado")),
             "nuevo": bool(l.get("nuevo_de_vendedor")),

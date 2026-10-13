@@ -21,4 +21,4 @@ try:
 except ImportError:
     pass
 
-UA = f"CazaLotes/1.0 (uso personal, no comercial; contacto: {CONTACTO})"
+UA = f"Caxi-Vaxi/1.0 (uso personal, no comercial; contacto: {CONTACTO})"

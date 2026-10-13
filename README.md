@@ -14,7 +14,7 @@ The name started as CazaLotes, "lot hunter", which sounds like *cachalote*, sper
 Then it was Cacharrotes, from *cacharro*, what Venezuelans call any old thing. Now it is
 Caxi-Vaxi: *cachivaches*, odds and ends, said the way *wabi-sabi* sounds, because the
 things worth keeping are the old, worn and slightly imperfect ones. The repository keeps
-its original name.
+the name caxi-vaxi too, on GitHub and on disk, since October 2026.
 
 ## What it does
 
@@ -128,9 +128,10 @@ eBay's API License Agreement (read 13 October 2026) shapes four things:
   is overwritten on every run, `vista.py` refuses it after six hours, and the page itself
   hides eBay listings once their lookup is six hours old. Every eBay card says how long ago
   it was fetched.
-- eBay content may not be mixed with other listings. eBay never appears in the main grid;
-  it shows up only when "eBay" is picked in the source menu, and then on its own. The
-  sharing page leaves it out.
+- eBay content in a "Public Display" may not be mixed with other listings. Caxi-Vaxi is
+  not public: it is a private page for me and my partner, behind an invitation-only login,
+  so eBay sits in the grid with everything else. The sharing page in `compartir.py`, which
+  goes out with an open link, still leaves it out.
 - No eBay user IDs may be stored. The reader keeps the piece and drops the seller entirely,
   which is also what the "Not persisting eBay data" exemption from eBay's account-deletion
   notifications declares.

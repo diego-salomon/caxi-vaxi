@@ -321,7 +321,11 @@ eBay es una marca de eBay Inc. Esta aplicaci&oacute;n usa la API de eBay, pero n
 const DATOS = __DATOS__;
 /* Votos: ahora solo "me gusta". Se guarda con la misma clave de siempre; los
    votos viejos de "me gusta" (2) y "me encanta" (3) cuentan como me gusta. */
-const K='cazalotes.votos', KE='cazalotes.encargos';
+const K='caxivaxi.votos', KE='caxivaxi.encargos', KA='caxivaxi.ancho';
+/* El proyecto se llamaba cazalotes: lo guardado con las claves viejas se
+   pasa una vez a las nuevas para no perder votos ni busquedas */
+try{ [['cazalotes.votos',K],['cazalotes.encargos',KE],['cazalotes.ancho',KA]].forEach(([v,n])=>{
+  if(localStorage.getItem(n)===null&&localStorage.getItem(v)!==null)localStorage.setItem(n,localStorage.getItem(v)); }); }catch(e){}
 let votos={}, encargos={};
 try{ votos=JSON.parse(localStorage.getItem(K)||'{}'); }catch(e){}
 try{ encargos=JSON.parse(localStorage.getItem(KE)||'{}'); }catch(e){}
@@ -407,20 +411,20 @@ chips('#tipos',Object.keys(TIPOS)); chips('#mats',MATS); chips('#epocas',EPOCAS)
 chips('#colores',COLS);
 const marcados=cont=>[...document.querySelectorAll(cont+' .chip.on')].map(c=>c.dataset.x);
 
-/* eBay: su licencia prohibe mezclar sus anuncios con los de otras fuentes y
-   mostrarlos con mas de 6 h desde la consulta. Solo aparecen eligiendo "eBay"
-   en el desplegable, solos, y con la hora de la consulta a la vista. */
+/* eBay: su licencia no deja mostrar un anuncio con mas de 6 h de retraso.
+   Cada ficha de eBay lleva la hora de su consulta y desaparece sola al pasar
+   de 6 h. Va mezclado con lo demas: la pagina es privada, no publica. */
 const EBAY='eBay', EBAY_MAX_H=6;
 const horasDesde=iso=>(Date.now()-Date.parse(iso))/36e5;
-const caducado=d=>d.aparte&&(!d.obt||horasDesde(d.obt)>EBAY_MAX_H);
+const caducado=d=>d.ebay&&(!d.obt||horasDesde(d.obt)>EBAY_MAX_H);
 function haceTxt(iso){ const h=horasDesde(iso);
   return h<1?'hace '+Math.max(1,Math.round(h*60))+' min':'hace '+h.toFixed(1).replace('.',',')+' h'; }
 
-/* Portales: todos por defecto; se pueden elegir varios. eBay va solo (licencia). */
+/* Portales: todos por defecto; se pueden elegir varios. */
 const cuentaPortal={}; DATOS.forEach(d=>{ if(!caducado(d)){ const g=d.grupo||d.fuente; cuentaPortal[g]=(cuentaPortal[g]||0)+1; } });
 $('#portales').innerHTML='<button class="chip on" data-portal="" aria-pressed="true">Todos</button>'
   +Object.keys(cuentaPortal).sort((a,b)=>cuentaPortal[b]-cuentaPortal[a])
-    .map(f=>'<button class="chip" data-portal="'+esc(f)+'" aria-pressed="false">'+esc(f===EBAY?'eBay (aparte)':f)
+    .map(f=>'<button class="chip" data-portal="'+esc(f)+'" aria-pressed="false">'+esc(f)
       +' <small>'+cuentaPortal[f].toLocaleString('es-ES')+'</small></button>').join('');
 const portalesMarcados=()=>[...document.querySelectorAll('#portales .chip.on')].map(c=>c.dataset.portal).filter(Boolean);
 function marcarPortal(c){
@@ -428,8 +432,6 @@ function marcarPortal(c){
   const pon=(x,on)=>{ x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); };
   if(!c.dataset.portal){ todos.forEach(x=>pon(x,!x.dataset.portal)); return; }
   pon(c,!c.classList.contains('on'));
-  /* eBay no se mezcla con nada: elegirlo apaga los demas, y al reves */
-  if(c.classList.contains('on'))todos.forEach(x=>{ if(x!==c&&x.dataset.portal&&((c.dataset.portal===EBAY)||(x.dataset.portal===EBAY)))pon(x,false); });
   pon(todos[0],!portalesMarcados().length);
 }
 
@@ -465,7 +467,7 @@ function datosPieza(d){
 }
 function origen(d){
   const portal=esc(d.grupo||d.fuente);
-  const extra=d.aparte?'consultado '+haceTxt(d.obt):(d.lugar||'');
+  const extra=[d.lugar,d.ebay?'consultado '+haceTxt(d.obt):''].filter(Boolean).join(' · ');
   return '<b>'+portal+'</b>'+(extra?' · '+esc(extra):'');
 }
 function lineaPrecio(d){
@@ -512,7 +514,7 @@ function cumple(d,E){
   /* texto libre: todas las palabras tienen que aparecer, en cualquier orden */
   if(E.q&&!E.q.split(/\s+/).every(w=>d._t.includes(w)))return false;
   if(E.fuentes.length&&!E.fuentes.includes(d.grupo||d.fuente))return false;
-  if(d.aparte&&(E.fuentes.join()!==EBAY||caducado(d)))return false;
+  if(caducado(d))return false;
   if(E.paises.length&&!E.paises.includes(d.pais))return false;
   if(E.fav&&!gusta(d.id))return false;
   if(E.excluir.some(x=>d._t.includes(x)))return false;
@@ -607,7 +609,7 @@ function detalle(i){
   actual=i; const d=visibles[i]; if(!d)return;
   const g=gusta(d.id);
   const filas=[['Portal',d.fuente],
-    ['Consultado',d.aparte?haceTxt(d.obt)+' (en eBay puede haber cambiado)':null],
+    ['Consultado',d.ebay?haceTxt(d.obt)+' (en eBay puede haber cambiado)':null],
     ['Ubicación',d.lugar],['Año',d.ano],['Medidas',d.dims],
     ['Materiales',(d.mats||[]).join(', ')],
     ['Envío',d.envio===0?'Gratis':(d.envio?eur(d.envio):null)],
@@ -694,9 +696,9 @@ $('#limpiar').addEventListener('click',()=>{
 $('#densidad').addEventListener('click',e=>{
   const n=(+e.currentTarget.dataset.d+1)%3; e.currentTarget.dataset.d=n;
   document.documentElement.style.setProperty('--ancho',ANCHOS[n]+'px');
-  try{ localStorage.setItem('cazalotes.ancho',n); }catch(err){} });
-try{ const n=+localStorage.getItem('cazalotes.ancho');
-  if(n>=0&&n<3&&localStorage.getItem('cazalotes.ancho')!==null){ $('#densidad').dataset.d=n;
+  try{ localStorage.setItem(KA,n); }catch(err){} });
+try{ const n=+localStorage.getItem(KA);
+  if(n>=0&&n<3&&localStorage.getItem(KA)!==null){ $('#densidad').dataset.d=n;
     document.documentElement.style.setProperty('--ancho',ANCHOS[n]+'px'); } }catch(e){}
 
 /* encargos guardados */

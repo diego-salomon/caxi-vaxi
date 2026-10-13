@@ -7,10 +7,10 @@ from conftest import FICHA, FICHA_EBAY, RESUMEN_EBAY
 from vista import preparar
 
 
-def test_ebay_va_aparte_con_su_hora():
+def test_ebay_lleva_su_hora_de_consulta():
     l = ebay.normalizar(RESUMEN_EBAY, FICHA_EBAY, "2026-10-13T10:00:00+00:00")
     d = preparar([puntuar.puntuar(dict(l))])[0]
-    assert d["aparte"] is True and d["grupo"] == "eBay"
+    assert d["ebay"] is True and d["grupo"] == "eBay"
     assert d["obt"] == "2026-10-13T10:00:00+00:00"
 
 
@@ -19,7 +19,7 @@ def test_wallapop_se_mezcla_y_lleva_sello_de_reservado():
     f["flags"]["reserved"] = True
     l = wallapop.registro(f, "articulo")
     d = preparar([puntuar.puntuar(dict(l))])[0]
-    assert d["aparte"] is False and d["obt"] is None
+    assert d["ebay"] is False and d["obt"] is None
     assert d["res"] is True and d["grupo"] == "Wallapop"
 
 
