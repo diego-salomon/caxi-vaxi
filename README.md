@@ -227,6 +227,21 @@ The look follows my Juddaun design system (Judd plus Braun: repeated objects on 
 1px rules, one accent, no emoji) in a palette I call Klein: white, cool greys and one electric
 blue. The audit behind the current version is in `AUDITORIA-DISENO.md`.
 
+## Opening it from anywhere
+
+The page is private, not public. It is published to Cloudflare Pages at
+`caxi-vaxi.pages.dev`, behind Cloudflare Access: only the email addresses on the list (mine
+and my partner's) get in, with a six-digit code sent by email. `publicar.py` refuses to upload
+anything unless the address already answers with the Access login, so the page is never left
+open, not even for a minute.
+
+`actualizar.py` is the scheduled job (`~/Library/LaunchAgents/com.diego.caxivaxi.plist`): at
+7:00 the full pass (auction houses, shops, Etsy, Wallapop, eBay), then at 13:00, 19:00 and
+1:00 only eBay, whose listings expire after six hours. Each run rebuilds the page and uploads
+it. Everything goes to `datos/actualizar.log`; a step that fails does not stop the others.
+
+On the Mac, `~/Applications/Caxi-Vaxi.app` opens the local copy.
+
 ## Sharing a search
 
 `compartir.py` turns the storage search into a phone page that can be published as a
@@ -252,6 +267,8 @@ write there keeps their votes on their phone and can copy the list to send it.
 | `wallapop.py` | Wallapop listings, sellers and landing pages, and what changed since last time |
 | `tests/` | The eBay and Wallapop readers against made-up pages, no network |
 | `compartir.py` | A search as a phone page to share and vote on |
+| `publicar.py` | Uploads the private page to Cloudflare, only if Access protects it |
+| `actualizar.py` | The scheduled job: crawl, rebuild, upload |
 | `marca/` | The whale, in two sizes |
 | `puntuar.py` | Scoring, and the catalogue-vocabulary flags |
 | `encargo.py` | Briefs with hard dimensional limits |
