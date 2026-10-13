@@ -24,6 +24,7 @@ Uso:
     .venv/bin/python publicar.py            regenera la vista y la sube
     .venv/bin/python publicar.py --solo     sube la vista que ya hay
     .venv/bin/python publicar.py --clave    sube a Cloudflare la clave de config_local.py
+    .venv/bin/python publicar.py --enlace   apunta el enlace magico en config_local.py
 """
 import os
 import shutil
@@ -64,6 +65,27 @@ def subir_clave():
     return r.returncode == 0
 
 
+def enlace_magico():
+    """
+    El enlace "no listado": entra sin escribir la clave. Sale de la clave
+    (misma cuenta que web/functions/_middleware.js) y se apunta en
+    config_local.py como CAXIVAXI_ENLACE. Cambiar la clave lo anula.
+    """
+    import hashlib
+    import hmac
+    import config_local
+    clave = config_local.CAXIVAXI_CLAVE
+    ficha = hmac.new(clave.encode(), b"enlace-v1", hashlib.sha256).hexdigest()[:32]
+    url = f"{DOMINIO}/e/{ficha}"
+    ruta = os.path.join(RAIZ, "config_local.py")
+    texto = open(ruta, encoding="utf-8").read()
+    if "CAXIVAXI_ENLACE" not in texto:
+        with open(ruta, "a", encoding="utf-8") as f:
+            f.write("# Enlace magico: entra sin escribir la clave. Compartelo solo con quien quieras.\n")
+            f.write(f'CAXIVAXI_ENLACE = "{url}"\n')
+    return url
+
+
 def cerrada(url=DOMINIO, intentos=8):
     """
     True si, sin cookie, la direccion responde con el formulario (401).
@@ -99,6 +121,9 @@ def subir():
 if __name__ == "__main__":
     if "--clave" in sys.argv:
         sys.exit(0 if subir_clave() else 1)
+    if "--enlace" in sys.argv:
+        enlace_magico()
+        sys.exit("enlace magico apuntado en config_local.py (CAXIVAXI_ENLACE)")
     if not os.path.exists(os.path.join(WEB, "functions", "_middleware.js")):
         sys.exit("!! Falta web/functions/_middleware.js: sin puerta no se sube nada.")
     if not hay_clave():

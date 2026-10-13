@@ -11,7 +11,7 @@
  */
 
 const COOKIE = "cv";
-const DIAS = 180;
+const DIAS = 400;          // el maximo que Chrome deja a una cookie; se renueva en cada visita
 
 async function hmac(clave, texto) {
   const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(clave),
@@ -79,6 +79,19 @@ export async function onRequest({ request, env, next }) {
   if (url.pathname === "/salir") {
     return new Response(null, { status: 303, headers: { Location: "/", "Set-Cookie": fija("", 0) } });
   }
+  /* Enlace magico, como un video "no listado": /e/<ficha> entra sin escribir
+     la clave. La ficha sale de la clave pero no es la clave; cambiar CLAVE
+     anula todos los enlaces viejos. Se redirige a "/" para que la ficha no se
+     quede en la barra de direcciones ni en el historial. */
+  if (url.pathname.startsWith("/e/")) {
+    const enlace = (await hmac(clave, "enlace-v1")).slice(0, 32);
+    if (await igual(url.pathname.slice(3), enlace, ficha)) {
+      return new Response(null, { status: 303,
+        headers: { Location: "/", "Set-Cookie": fija(ficha, DIAS * 86400), "Referrer-Policy": "no-referrer" } });
+    }
+    await new Promise(r => setTimeout(r, 900));
+    return formulario(false);
+  }
   if (url.pathname === "/entrar" && request.method === "POST") {
     const datos = await request.formData();
     if (await igual(String(datos.get("clave") || ""), clave, ficha)) {
@@ -94,5 +107,7 @@ export async function onRequest({ request, env, next }) {
   const h = new Headers(r.headers);
   h.set("X-Robots-Tag", "noindex, nofollow");
   h.set("Cache-Control", "private, no-cache");
+  /* cada visita renueva el plazo: mientras se use, no caduca nunca */
+  if (url.pathname === "/" || url.pathname === "/index.html") h.append("Set-Cookie", fija(ficha, DIAS * 86400));
   return new Response(r.body, { status: r.status, statusText: r.statusText, headers: h });
 }

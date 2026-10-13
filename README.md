@@ -232,8 +232,11 @@ blue. The audit behind the current version is in `AUDITORIA-DISENO.md`.
 The page is private, not public. It is published to Cloudflare Pages at
 `caxi-vaxi.pages.dev`, and every request goes through `web/functions/_middleware.js` first:
 without the access key you only get the key form (a 401), never the data. The key is a secret
-of the Pages project (`CLAVE`) with a copy in `config_local.py`; once entered, a signed cookie
-keeps you in for six months. My partner and I share it.
+of the Pages project (`CLAVE`) with a copy in `config_local.py`. There is also a magic link,
+like an unlisted video: `/e/<token>` lets you in without typing anything (`publicar.py
+--enlace` writes it to `config_local.py`). The token is derived from the key, so changing the
+key revokes every old link. Once in, a signed cookie keeps the device in for 400 days (the
+most Chrome allows) and every visit renews it.
 
 Why a key and not Cloudflare Access: Access asks for a card on file and permission to charge
 it beyond the free tier. This way the Cloudflare account stays on the free plan with no
