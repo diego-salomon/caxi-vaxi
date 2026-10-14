@@ -41,6 +41,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 import warnings
 from datetime import datetime, timezone
 
@@ -173,12 +174,35 @@ def buscar(api, consulta, tope_eur=TOPE_EUR, ue=False, cuantos=100):
 
 
 def detalles(api, ids):
-    """Ficha con aspectos (medidas, material, epoca), de 20 en 20."""
+    """
+    Ficha con aspectos (medidas, material, epoca).
+
+    Primero de 20 en 20 (getItems). Pero getItems es de acceso restringido y
+    una app personal recibe 403 (comprobado el 2026-10-14). Entonces se piden
+    de una en una (getItem, abierto a todos) hasta agotar el tope de la pasada,
+    en el orden recibido: rastrear() pone primero los anuncios sin medidas en
+    el titulo, que son los que mas ganan con la ficha.
+    """
     out = {}
+    por_lotes = True
     for i in range(0, len(ids), 20):
-        trozo = ids[i:i + 20]
-        res = api.get("/buy/browse/v1/item/", item_ids=",".join(trozo))
+        try:
+            res = api.get("/buy/browse/v1/item/", item_ids=",".join(ids[i:i + 20]))
+        except PermissionError:
+            por_lotes = False
+            break
         for it in res.get("items") or []:
+            out[it["itemId"]] = it
+    if por_lotes:
+        return out
+    for iid in ids:
+        if api.n >= TOPE_PETICIONES - 2:
+            break
+        try:
+            it = api.get("/buy/browse/v1/item/" + urllib.parse.quote(iid, safe=""))
+        except (PermissionError, RuntimeError):
+            break
+        if it.get("itemId"):
             out[it["itemId"]] = it
     return out
 
@@ -313,9 +337,11 @@ def rastrear(consultas=None, tope_eur=TOPE_EUR, ue=False):
         vistos.update(x["itemId"] for x in nuevos)
         resumenes += nuevos
         print(f"  {len(nuevos):3d}  {q}")
-    # Las medidas solo estan en la ficha. Se piden mientras quede presupuesto.
+    # Las medidas solo estan en la ficha. Se piden mientras quede presupuesto,
+    # primero las de los anuncios que no traen medidas en el titulo.
+    orden = sorted(resumenes, key=lambda x: bool(medidas_libres(x.get("title") or "")[0]))
     hueco = (TOPE_PETICIONES - api.n - 5) * 20
-    fichas = detalles(api, [x["itemId"] for x in resumenes[:max(0, hueco)]])
+    fichas = detalles(api, [x["itemId"] for x in orden[:max(0, hueco)]])
     obtenido = datetime.now(timezone.utc).isoformat(timespec="seconds")
     lotes = [x for x in (normalizar(s, fichas.get(s["itemId"]), obtenido) for s in resumenes) if x]
     print(f"  TOTAL eBay: {len(lotes)} anuncios · {api.n} peticiones")
