@@ -247,12 +247,19 @@ stop answering for the day.
 page in the same deployment, and afterwards checks that the address without the key returns
 the form and not the page. `publicar.py --clave` uploads the key from `config_local.py`.
 
-`actualizar.py` is the scheduled job (`~/Library/LaunchAgents/com.diego.caxivaxi.plist`): at
-7:00 the full pass (auction houses, shops, Etsy, Wallapop, eBay), then at 13:00, 19:00 and
-1:00 only eBay, whose listings expire after six hours. Each run rebuilds the page and uploads
-it. Everything goes to `datos/actualizar.log`; a step that fails does not stop the others.
+There is no scheduled job: most days nobody opens the page, so nothing runs. Opening
+`~/Applications/Caxi-Vaxi.app` shows the local copy straight away and starts
+`actualizar.py si-toca` in the background, which does only what is due: the full pass
+(auction houses, shops, Etsy, Wallapop, eBay; about 40 minutes) if the last one is more than
+24 hours old, otherwise eBay alone if its listings are more than six hours old (its licence
+does not allow showing anything older), otherwise nothing. A lock stops two runs at once, an
+eBay run that brings nothing new does not upload, and a macOS notification says when it is
+done. Each run rebuilds the page and uploads it, so the web copy is as fresh as the last
+time the app was opened. Everything goes to `datos/actualizar.log`; a step that fails does
+not stop the others. The app's script is `marca/app-caxi-vaxi.applescript`.
 
-On the Mac, `~/Applications/Caxi-Vaxi.app` opens the local copy.
+The old launchd job is kept, disabled, as
+`~/Library/LaunchAgents/com.diego.caxivaxi.plist.desactivado`.
 
 ## Sharing a search
 
@@ -281,7 +288,7 @@ write there keeps their votes on their phone and can copy the list to send it.
 | `compartir.py` | A search as a phone page to share and vote on |
 | `publicar.py` | Uploads the private page to Cloudflare, behind its access key |
 | `web/functions/` | The gate: the access-key form in front of the page |
-| `actualizar.py` | The scheduled job: crawl, rebuild, upload |
+| `actualizar.py` | Crawl, rebuild and upload, only what is due; the app starts it |
 | `marca/` | The whale, in two sizes |
 | `puntuar.py` | Scoring, and the catalogue-vocabulary flags |
 | `encargo.py` | Briefs with hard dimensional limits |
