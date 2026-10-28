@@ -29,7 +29,6 @@ import json
 import os
 import re
 import sys
-import time
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -330,6 +329,8 @@ if __name__ == "__main__":
             todo += FUENTES[f]()
         except ParadaTotal as e:
             print(f"\n!! PARADA TOTAL en {f}: {e}\n   No reintentes en bucle.")
+        except Exception as e:   # noqa: BLE001 - una fuente rota no tumba la otra
+            print(f"\n!! fallo en {f}: {type(e).__name__}: {e}")
     if todo:
         nuevos, total = guardar(todo)
         print(f"\nGuardados: {nuevos} nuevos, {total} en total.")

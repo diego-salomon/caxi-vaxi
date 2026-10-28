@@ -232,6 +232,8 @@ def normalizar(l, tienda=None):
         return None
     moneda = precio.get("currency_code", "EUR")
     eur = round(valor * A_EUR[moneda], 2) if moneda in A_EUR else None
+    if eur is None:
+        return None     # moneda sin cambio: sin eur esquivaria el filtro de precio
 
     imgs = l.get("images") or []
     img = imgs[0] if imgs else {}
@@ -332,6 +334,10 @@ def rastrear(consultas=None, tope_eur=900):
         except PermissionError as e:
             print("  ", e)
             return []
+        except requests.RequestException as e:
+            # un 500 o un corte de red en UNA busqueda no aborta la pasada
+            print("  ", q, e)
+            continue
         vistos.update(nuevos)
         ids += nuevos
         print(f"  {len(nuevos):3d}  {q}")

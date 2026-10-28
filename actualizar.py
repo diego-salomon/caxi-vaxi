@@ -113,6 +113,9 @@ def soltar_cerrojo():
 
 
 def correr(pasos):
+    """Corre cada paso en un subproceso. Devuelve cuantos rastreos salieron bien
+    (sin contar 'subir'), para que __main__ decida si marcar la pasada del dia."""
+    ok = 0
     for nombre, args, limite in pasos:
         anotar(f"empieza {nombre}")
         try:
@@ -120,10 +123,18 @@ def correr(pasos):
                                capture_output=True, text=True)
             cola = (r.stdout or "").strip().splitlines()[-3:]
             anotar(f"  {nombre}: salida {r.returncode} | " + " / ".join(cola)[:300])
+            if r.returncode:
+                # el traceback va a stderr: sin esto, el fallo era invisible
+                err = (r.stderr or "").strip().splitlines()[-3:]
+                if err:
+                    anotar("    stderr: " + " / ".join(err)[:300])
+            elif nombre != "subir":
+                ok += 1
         except subprocess.TimeoutExpired:
             anotar(f"  {nombre}: se paso de {limite} s, se corta")
         except Exception as e:   # noqa: BLE001 - un paso roto no para los demas
             anotar(f"  {nombre}: fallo {type(e).__name__}: {e}")
+    return ok
 
 
 def decidir(modo):
@@ -150,9 +161,14 @@ if __name__ == "__main__":
             avisar("Actualizando todo (unos 40 min). Te aviso al acabar." if modo == "completa"
                    else "Actualizando eBay (un minuto).")
         if modo == "completa":
-            correr(COMPLETA)
-            with open(MARCA, "w", encoding="utf-8") as f:
-                f.write(datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+            hechos = correr(COMPLETA)
+            # solo se marca el dia si algun rastreo salio bien; si todo fallo
+            # (sin red, venv roto) no se marca, para reintentar antes de 24 h
+            if hechos:
+                with open(MARCA, "w", encoding="utf-8") as f:
+                    f.write(datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+            else:
+                anotar("  nada salio bien: no se marca la pasada, se reintentara")
         else:
             correr(SOLO_EBAY[:1])
             # si eBay no trajo nada nuevo (claves sin activar, caida), la web

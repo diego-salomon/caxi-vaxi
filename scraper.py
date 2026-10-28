@@ -228,8 +228,7 @@ def extraer_lotes(html, casa_id, url_origen):
 
 
 def paginar(url, max_paginas=12):
-    """Recorre ?page=N hasta que deje de dar lotes nuevos."""
-    todo, sin_nuevos = [], 0
+    """Devuelve (url, html) de ?page=1..N; el llamador corta cuando no hay nuevos."""
     for p in range(1, max_paginas + 1):
         sep = "&" if "?" in url else "?"
         u = url if p == 1 else f"{url}{sep}page={p}"
@@ -237,7 +236,6 @@ def paginar(url, max_paginas=12):
         if not html:
             break
         yield u, html
-    return todo
 
 
 RE_SUBASTA = re.compile(r"/es/subasta/[^\"'#?]+")
@@ -350,6 +348,11 @@ def guardar(lotes, nombre="lotes.json"):
         try:
             previos = json.load(open(ruta, encoding="utf-8"))
         except Exception:
+            # No pisar en silencio los unicos datos que no se regeneran
+            # (primera_vez, historico_salida): apartar el archivo y avisar.
+            roto = ruta + ".roto"
+            os.replace(ruta, roto)
+            print(f"  AVISO: {nombre} ilegible, apartado como {os.path.basename(roto)}; se empieza de cero")
             previos = []
     por_url = {l["url"]: l for l in previos}
     nuevos = 0
@@ -366,6 +369,10 @@ def guardar(lotes, nombre="lotes.json"):
                 hist.append({"fecha": l["visto"], "de": ant, "a": l["salida"]})
             l["historico_salida"] = hist
         por_url[l["url"]] = l
-    json.dump(list(por_url.values()), open(ruta, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=1)
+    # Escritura atomica: si el proceso muere a mitad, lotes.json no queda a
+    # medias. os.replace es atomico dentro del mismo directorio.
+    tmp = ruta + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(list(por_url.values()), f, ensure_ascii=False, indent=1)
+    os.replace(tmp, ruta)
     return nuevos, len(por_url)

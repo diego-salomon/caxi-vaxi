@@ -334,6 +334,10 @@ def rastrear(consultas=None, tope_eur=TOPE_EUR, ue=False):
         except PermissionError as e:
             print("  ", e)
             return []
+        except requests.RequestException as e:
+            # un 500 o un corte de red en UNA busqueda no aborta la pasada
+            print("  ", q, e)
+            continue
         vistos.update(x["itemId"] for x in nuevos)
         resumenes += nuevos
         print(f"  {len(nuevos):3d}  {q}")
