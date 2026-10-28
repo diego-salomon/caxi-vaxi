@@ -146,7 +146,7 @@ GUSTA = {
     # AVISO DE LECTURA: el bloque de comodas/cajoneras/aparadores de esos
     # favoritos (IKEA Malm, KOPPANG, Maisons du Monde, Luis Philippe, comoda
     # blanca de 30 EUR) NO es gusto: era busqueda activa para el dormitorio.
-    # Diego lo confirmo: "las comodas y cajoneras son una mierda, ignoralo".
+    # Confirmado: ese bloque no refleja gusto, era busqueda activa; ignorar.
     # La UNICA excepcion es el armario de Ico Parisi para Fratelli Reguitti.
     # O sea: no quiere "una comoda", quiere almacenaje italiano mid-century.
     # Por eso los negativos de anticuario (luis felipe, marqueteria, tallado)

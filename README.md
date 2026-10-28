@@ -348,3 +348,10 @@ From Alcalá's own archive, 9,590 pairs of starting price and hammer price:
 So roughly three lots in ten are knocked down at the opening bid with nobody bidding against
 you. Bidding wars are the exception. Leaving a modest bid on thirty lots beats fighting over
 one.
+
+## License
+
+This repository is public for portfolio review only. The code is source-available,
+not open source: all rights reserved, no permission to use, copy or modify it. See
+[LICENSE](LICENSE). It is a personal project; anyone who runs any part of it is
+responsible for complying with each site's terms of service and robots.txt.
