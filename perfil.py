@@ -89,7 +89,7 @@ GUSTA = {
     "diseno": 3, "disenador": 3, "mid century": 3, "midcentury": 3,
     "escandinavo": 3, "nordico": 3, "danes": 3, "teca": 3, "palisandro": 3,
     "vintage": 1, "anos 50": 3, "anos 60": 3, "anos 70": 3, "space age": 3,
-    "art deco": 2, "bauhaus": 3, "racionalista": 2, "italiano": 1,
+    "art deco": 2, "bauhaus": 3, "italiano": 1,  # "racionalista" esta mas abajo con mas peso
 
     # Marcas de mueble que valen la pena (de la investigacion)
     "wegner": 3, "finn juhl": 3, "fritz hansen": 3, "carl hansen": 3,
@@ -132,8 +132,10 @@ GUSTA = {
     "artesanal": 2, "hecho a mano": 2, "carpinteria": 2, "ebanisteria": 3,
 
     # --- DISENADORES extraidos de La Basilica Galeria (Barcelona) ---
-    "ico parisi": 4,  # el armario que si le gusta es suyo "joe colombo": 3, "gavina": 3, "manfredo massironi": 3,
-    "ludvik volak": 3, "fratelli reguitti": 4,  # su referencia explicita de almacenaje "oluce": 3, "kazuhide takahama": 3,
+    "ico parisi": 4,  # el armario que si le gusta es suyo
+    "joe colombo": 3, "manfredo massironi": 3,  # gavina ya esta arriba
+    "ludvik volak": 3, "fratelli reguitti": 4,  # su referencia explicita de almacenaje
+    "oluce": 3, "kazuhide takahama": 3,
     "harvey guzzini": 3, "guzzini": 2, "formanova": 3, "meurop": 3,
     "maitland-smith": 2, "berrocal": 3, "moscatelli": 3, "raumdesign": 2,
     "bizette-lindet": 3, "moerenhout": 3, "trocme": 2, "urquiola": 3,
@@ -204,7 +206,7 @@ NO_GUSTA_FUERTE = {
     "icono religioso": -4, "caliz de plata": -4, "custodia procesional": -4,
 
     # Mueble de anticuario clasico, dijo que no le interesa nada
-    "castellan": -4, "isabelin": -4, "fernandin": -4, "victorian": -4,
+    "castellano": -4, "isabelin": -4, "fernandin": -4, "victorian": -4,  # "castellano", no "castellan" (saltaba en Paseo de la Castellana)
     "renacimiento": -4, "renacentista": -4, "barroc": -4, "luis xv": -4,
     # los "neo" del XIX: el limite de palabra no deja que "renacentista"
     # salte dentro de "neorrenacentista", asi que van con nombre propio

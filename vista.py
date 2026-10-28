@@ -136,7 +136,9 @@ def descripcion(l):
 def atributos(l):
     t = ((l.get("titulo") or "") + " " + (l.get("texto") or "")).lower()
     plano = sin_tildes(t[:700])
-    mats = [m for m in MATERIALES if m in t]
+    # sobre `plano` y con limite de palabra: si no, "marmol"/"laton"/"ceramica"
+    # no casaban con el texto con tildes, y "teca" saltaba dentro de "biblioteca"
+    mats = [m for m in MATERIALES if re.search(r"(?<![a-z])" + m + r"(?![a-z])", plano)]
     per = [p for p, rx in PERIODOS if re.search(rx, t)]
     dims = dimensiones(l.get("texto") or "")
     cols = [c for c, rx in COLORES

@@ -14,6 +14,12 @@ import perfil
 from casas import CASAS, coste_total
 
 
+# Palabras completas (no raices) que con limite solo-izquierda saltaban dentro
+# de otra palabra: "poster" en "posterior", "lamina" en "laminado", "estampa"
+# en "estampado". Verificado: 92 lotes penalizados por error. Permiten el plural.
+FIN_PALABRA = {"poster", "lamina", "estampa"}
+
+
 def _encaja(clave, texto, estricto=False):
     """
     Limite de palabra por la IZQUIERDA siempre que haga falta.
@@ -28,6 +34,8 @@ def _encaja(clave, texto, estricto=False):
     if len(clave) <= 4 or any(c.isdigit() for c in clave):
         return re.search(r"(?<![a-z0-9])" + re.escape(clave) + r"(?![a-z0-9])", texto) is not None
     if estricto:
+        if clave in FIN_PALABRA:
+            return re.search(r"(?<![a-z0-9])" + re.escape(clave) + r"s?(?![a-z])", texto) is not None
         return re.search(r"(?<![a-z0-9])" + re.escape(clave), texto) is not None
     return clave in texto
 
@@ -46,6 +54,12 @@ _ESTILO_VAGO = re.compile(r"^\s*(this|my|the|our|your|old|classic|vintage|indust
 # fuentes que escriben en ingles: ahi "after " es una palabra cualquiera y el
 # vocabulario de atribucion es el de GRADOS_ATRIBUCION_EN
 EN_INGLES = {"etsy", "1stdibs", "oblist"}
+
+# Formulas de atribucion en espanol que SOLO cuentan en el titulo. En la
+# descripcion, "segun la tradicion" o "segun se aprecia" (texto fijo de Odalys)
+# y "estilo colorido" son lenguaje corriente, no una confesion de copia.
+# Verificado: penalizaban 63 lotes, 52 de ellos arte venezolano de Odalys.
+SOLO_TITULO_ES = {"segun ", "estilo "}
 
 
 def _atribucion_en(formula, texto):
@@ -154,6 +168,9 @@ def puntuar(lote):
             # una confesion: "inspired by" solo cuenta en el titulo
             donde = limpiar(lote.get("titulo", "")) if formula == "inspired by" else txt
             if not _atribucion_en(formula, donde):
+                continue
+        elif formula in SOLO_TITULO_ES:
+            if formula not in limpiar(lote.get("titulo", "")):
                 continue
         elif formula not in txt:
             continue
