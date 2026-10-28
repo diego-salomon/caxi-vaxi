@@ -14,9 +14,7 @@ import warnings
 warnings.simplefilter('ignore')
 import os
 import re
-import sys
 
-from casas import CASAS, coste_total
 from puntuar import limpiar, puntuar
 from scraper import DIR_DATOS
 
@@ -141,7 +139,7 @@ def buscar(enc, lotes=None, incluir_alternativa=True):
         if ok is False and incluir_alternativa and enc.get("alternativa"):
             ok2, dims2, motivo2 = cabe(l.get("texto", ""), enc["alternativa"]["limites"])
             if ok2:
-                ok, dims, motivo, via = True, dims2, motivo2, "alternativa"
+                ok, _, motivo, via = True, dims2, motivo2, "alternativa"
         if ok is False:
             continue
 

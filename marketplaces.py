@@ -1,34 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-Wallapop, Etsy y Mercado Libre.
+Enlaces de busqueda listos para los sitios que se consultan A MANO.
 
-COMPROBADO EL 2026-10-01, Y EL RESULTADO ES UN NO:
+Lo que se puede rastrear respetando cada fuente ya tiene su propio modulo: las
+cinco casas de Madrid (scraper.py), las tiendas Shopify, Pamono y 1stDibs
+(tiendas.py), y por sus APIs oficiales Etsy (etsy.py) y eBay (ebay.py).
+Wallapop se lee solo por fichas /item/ y perfiles permitidos (wallapop.py).
 
-  WALLAPOP   Su propio robots.txt lo prohibe de forma explicita en el bloque
-             'User-agent: *':  Disallow: /search  ·  Disallow: /app/  ·  Disallow: /*?
-             Toda busqueda lleva query string, asi que NO HAY forma de rastrearlo
-             respetando sus reglas. Su API interna devuelve 403.
-             -> No se rastrea. Se generan URLs para buscar a mano.
+Lo que NO se puede rastrear de forma limpia se busca a mano, y este modulo
+genera los enlaces con la consulta y el tope ya puestos (comprobado 2026-10-01):
 
-  ETSY       Devuelve 403 a cualquier peticion automatizada (antibot activo).
-             Su robots.txt ademas bloquea /api/ y los parametros de precio
-             (/*min=* , /*max=*), o sea que ni filtrando por precio.
-             -> La via limpia es su API oficial, que necesita una clave gratuita:
-                https://www.etsy.com/developers/register
-                Con clave, el endpoint es findAllListingActive de la API v3.
+  CATAWIKI       Akamai devuelve 403 a todo lo automatico, robots.txt incluido.
+  MERCADO LIBRE  API y web tras un muro de cuenta; su robots.txt bloquea a los
+                 bots de IA con Disallow: /. Entrar logueado seria raspar bajo
+                 el contrato de usuario, justo lo que la via legal evita.
 
-  MERCADO    La API publica devuelve 403 sin autenticacion, y la web redirige a
-  LIBRE      un muro de verificacion de cuenta. Ademas su robots.txt bloquea
-             expresamente a ClaudeBot, GPTBot y companyia con Disallow: /.
-             Entrar logueado seria raspar BAJO EL CONTRATO DE USUARIO, que es
-             justo lo que la investigacion legal dice que no hay que hacer.
-             -> La via limpia es registrar una app:
-                https://developers.mercadolibre.com.ve/
-
-CONCLUSION PRACTICA: las cinco casas de Madrid se rastrean (su robots.txt dice
-"Disallow:" vacio, todo permitido). Los marketplaces se buscan A MANO. Lo que si
-puede hacer la herramienta es la combinatoria que nadie hace a mano: cruzar tus
-24 artistas y tus 45 palabras con cada sitio y dejarte los enlaces listos.
+La parte tediosa (cruzar artistas y palabras con cada sitio) se deja lista en
+datos/plan_busqueda.md. Aqui tambien se ofrecen enlaces de Etsy y Wallapop como
+atajo manual, aunque ambos ya entren por su rastreador.
 """
 import urllib.parse
 
@@ -82,7 +71,7 @@ SITIOS = {
     "wallapop": {
         "nombre": "Wallapop",
         "url": "https://es.wallapop.com/app/search?keywords={q}&latitude=40.4168&longitude=-3.7038",
-        "nota": "Madrid. Precio fijo y negociable, recogida en mano. NO rastreable.",
+        "nota": "Madrid. Precio fijo y negociable, recogida en mano. Rastreador propio en wallapop.py.",
     },
     "etsy": {
         "nombre": "Etsy",
@@ -145,7 +134,7 @@ def plan_de_busqueda(incluir_todas=False):
 
 def markdown(incluir_todas=False):
     out = ["# Plan de busqueda manual", "",
-           "Los tres marketplaces bloquean el rastreo automatico, asi que esto se hace a mano.",
+           "Catawiki y Mercado Libre no se pueden rastrear limpio, asi que se buscan a mano.",
            "La herramienta hace la parte tediosa: la combinatoria.", ""]
     for titulo, filas in plan_de_busqueda(incluir_todas):
         out.append(f"## {titulo}")

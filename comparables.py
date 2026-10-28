@@ -28,7 +28,6 @@ import os
 import re
 import statistics
 import unicodedata
-from collections import Counter
 
 from scraper import DIR_DATOS
 
