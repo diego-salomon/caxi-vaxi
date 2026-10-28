@@ -118,6 +118,10 @@ ODALYS = {
 
 
 def coste_total(remate, casa_id, transporte=0.0, restauracion=0.0):
+    """
+    Coste real de bolsillo. Sale del manual: nunca mires solo el precio de martillo.
+    Devuelve (total, desglose).
+    """
     if casa_id not in CASAS:          # tiendas Shopify: precio final, sin prima
         total = remate + transporte + restauracion
         return total, {"martillo": round(remate, 2), "comision": 0.0,
@@ -125,15 +129,12 @@ def coste_total(remate, casa_id, transporte=0.0, restauracion=0.0):
                        "restauracion": round(restauracion, 2),
                        "total": round(total, 2),
                        "recargo_pct": round(100 * (total - remate) / remate, 1) if remate else 0}
-    """
-    Coste real de bolsillo. Sale del manual: nunca mires solo el precio de martillo.
-    Devuelve (total, desglose).
-    """
     c = CASAS[casa_id]
-    if c["iva_sobre_comision"]:
-        comision = remate * c["comision"] * 1.21
-    else:
-        comision = remate * c["comision"]
+    tasa = c["comision"]
+    # Ansorena: 25 % hasta 1.000 EUR de martillo, 23 % por encima
+    if casa_id == "ansorena" and remate > 1000:
+        tasa = 0.23
+    comision = remate * tasa * 1.21 if c["iva_sobre_comision"] else remate * tasa
     total = remate + comision + transporte + restauracion
     return total, {
         "martillo": round(remate, 2),
