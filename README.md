@@ -10,6 +10,28 @@ lots are worth a look.
 
 It is not a marketplace, a price comparison site, or a reselling tool. One user, me.
 
+![The Caxi-Vaxi grid: vintage furniture from several sources in one scrollable page](docs/captura.jpg)
+
+## Technical highlights
+
+- **Respectful scraping as a hard constraint.** One request every three seconds, an
+  identifiable User-Agent, a full stop on any 403, `robots.txt` checked per source. Official
+  APIs where they exist (eBay Browse with OAuth client-credentials, Etsy v3), the open
+  `products.json` on Shopify, JSON-LD on 1stDibs, `__NEXT_DATA__` on Wallapop: structured
+  data over fragile CSS selectors.
+- **API licence rules enforced in code, not just documented.** eBay listings drop after six
+  hours and Etsy after twenty-four in `cargar_si_fresco`; the eBay seller is never stored.
+- **A scoring engine with a point of view** (`perfil.py`, `puntuar.py`): auction-catalogue
+  vocabulary flags, word-boundary matching to kill false positives, and real buyer's-premium
+  maths per house, VAT included (`casas.py`).
+- **Atomic writes and per-source isolation.** A crawl that fails in one source never
+  corrupts the saved data nor stops the others.
+- **Python, BeautifulSoup, requests. 55 tests, none touching the network. A private web copy
+  on Cloudflare Pages behind an HMAC gate.**
+
+Built with AI assistance, which the commit history shows openly: I set the product
+direction, the taste model and the scraping ethics; the code was written with Claude.
+
 The name started as CazaLotes, "lot hunter", which sounds like *cachalote*, sperm whale.
 Then it was Cacharrotes, from *cacharro*, what Venezuelans call any old thing. Now it is
 Caxi-Vaxi: *cachivaches*, odds and ends, said the way *wabi-sabi* sounds, because the
@@ -225,7 +247,7 @@ returns 403 to any automated request, `robots.txt` included, so it stays manual;
 
 The look follows my Juddaun design system (Judd plus Braun: repeated objects on a quiet field,
 1px rules, one accent, no emoji) in a palette I call Klein: white, cool greys and one electric
-blue. The audit behind the current version is in `AUDITORIA-DISENO.md`.
+blue. The audit behind the current version is in `docs/auditoria-diseno.md`.
 
 ## Opening it from anywhere
 
