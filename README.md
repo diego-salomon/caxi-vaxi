@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="marca/cachalote_cacharros.svg" width="190" alt="A sperm whale spouting a desk lamp, a chair and a vase">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cachalote-blanco.svg">
+  <img src="docs/assets/cachalote-negro.svg" width="180" alt="A sperm whale, the Caxi-Vaxi mark">
+</picture>
 
 # Caxi-Vaxi
 

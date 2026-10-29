@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 64" role="img" aria-label="Cachalote">
+  <path fill="#111111" d="M8,24 Q8,14 18,14 L54,14 C70,14 82,19 93,28 L104,34 L117,24 Q122,22 121,27 L111,36 L121,45 Q122,50 117,48 L104,38 C91,45 77,49 60,49 L26,49 Q19,49 17,45 L13,42 Q8,39 8,32 Z"/>
+  <path fill="#111111" d="M48,47 Q52,58 62,58 Q57,53 57,47 Z"/>
+  <g fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round">
+    <path d="M15,42 L42,44"/>
+    <path d="M72,29 h9 M76,34 h9 M71,39 h8"/>
+  </g>
+  <circle cx="45" cy="34" r="2" fill="#ffffff"/>
+  <g fill="none" stroke="#111111" stroke-width="2.2" stroke-linecap="round">
+    <path d="M13,11 L6,3"/><path d="M17,10 L15,1"/><path d="M10,13 L2,9"/>
+  </g>
+</svg>
