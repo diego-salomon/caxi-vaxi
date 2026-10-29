@@ -1,6 +1,22 @@
+<div align="center">
+
+<img src="marca/cachalote_cacharros.svg" width="190" alt="A sperm whale spouting a desk lamp, a chair and a vase">
+
 # Caxi-Vaxi
 
-<img src="marca/cachalote_cacharros.svg" width="160" alt="A sperm whale spouting a desk lamp, a chair and a vase">
+### Reads 13 vintage-furniture and art sources and scores every lot against one collector's taste.
+
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white&style=flat-square)](#running-it)
+[![BeautifulSoup](https://img.shields.io/badge/BeautifulSoup-555?style=flat-square)](#technical-highlights)
+[![55 tests](https://img.shields.io/badge/tests-55_offline-729B1B?style=flat-square)](#running-it)
+[![Cloudflare Pages](https://img.shields.io/badge/private_web_copy-Cloudflare_Pages-F38020?logo=cloudflare&logoColor=white&style=flat-square)](#opening-it-from-anywhere)
+[![source-available](https://img.shields.io/badge/license-source--available-999?style=flat-square)](LICENSE)
+
+<img src="docs/captura.jpg" width="860" alt="The Caxi-Vaxi grid: vintage furniture from several sources in one scrollable page" />
+
+</div>
+
+---
 
 A personal tool for finding vintage furniture and art to put in my own flat in Madrid.
 
@@ -9,8 +25,6 @@ opening the same auction catalogues one by one. This reads them for me and tells
 lots are worth a look.
 
 It is not a marketplace, a price comparison site, or a reselling tool. One user, me.
-
-![The Caxi-Vaxi grid: vintage furniture from several sources in one scrollable page](docs/captura.jpg)
 
 ## Technical highlights
 
