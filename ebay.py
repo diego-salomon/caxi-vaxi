@@ -74,6 +74,9 @@ BUSQUEDAS = [
     # flexos y lamparas, su lista mas grande en Wallapop
     "flexo vintage", "lampara jielde", "flexo anglepoise", "lampara industrial vintage",
     "aplique articulado vintage",
+    # escritorios (busqueda del 2026-11-24)
+    "escritorio vintage", "escritorio mid century", "escritorio teca",
+    "mesa eiermann", "mesa de dibujo vintage", "mesa formica vintage",
     # sillas
     "silla mid century", "silla thonet", "silla cesca", "silla teca danesa",
     # muebles de guardar (la busqueda del 2026-10-09)

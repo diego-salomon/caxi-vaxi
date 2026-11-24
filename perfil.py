@@ -136,6 +136,12 @@ GUSTA = {
     "joe colombo": 3, "manfredo massironi": 3,  # gavina ya esta arriba
     "ludvik volak": 3, "fratelli reguitti": 4,  # su referencia explicita de almacenaje
     "oluce": 3, "kazuhide takahama": 3,
+
+    # --- MESAS: le encantan las profundas, de formica y las de arquitecto
+    # tipo Eiermann 1 (Diego, 2026-11-24) ---
+    "eiermann": 4, "mesa de arquitecto": 4, "mesa de dibujo": 4, "tecnigrafo": 3,
+    "drafting table": 4, "architect table": 4, "architects table": 4,
+    "zeichentisch": 4, "mesa de caballete": 3, "trestle": 2, "formica": 3,
     "harvey guzzini": 3, "guzzini": 2, "formanova": 3, "meurop": 3,
     "maitland-smith": 2, "berrocal": 3, "moscatelli": 3, "raumdesign": 2,
     "bizette-lindet": 3, "moerenhout": 3, "trocme": 2, "urquiola": 3,

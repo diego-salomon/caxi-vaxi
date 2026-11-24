@@ -234,6 +234,8 @@ DIBS_CATEGORIAS = DIBS_ALMACENAJE + [
     "furniture/storage-case-pieces/sideboards",
     "furniture/storage-case-pieces/credenzas",
     "furniture/more-furniture-collectibles/bedroom-furniture/night-stands",
+    "furniture/tables/desks-writing-tables",
+    "furniture/storage-case-pieces/secretaires",
     "furniture/lighting/table-lamps",
     "furniture/lighting/floor-lamps",
     "furniture/lighting/sconces-wall-lights",

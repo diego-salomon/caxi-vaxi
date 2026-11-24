@@ -346,6 +346,7 @@ def preparar(lotes):
 # la del enlace: vista.html#tipos=almacenaje&tope=
 ATAJOS = {
     "muebles-de-guardar": "tipos=almacenaje&tope=",
+    "escritorios": "tipos=escritorio&tope=",
 }
 
 

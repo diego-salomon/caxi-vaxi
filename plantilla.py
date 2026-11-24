@@ -363,6 +363,12 @@ const TIPOS={
    'ladekast','dressoir'],
  'asiento':['silla','sillon','butaca','taburete','banqueta','sofa','canape','banco'],
  'mesa':['mesa','mesita','velador','escritorio','buro','mesa de centro','mesa de comedor'],
+ /* escritorios en los idiomas de las fuentes, y las mesas de arquitecto tipo
+    Eiermann que le encantan. "bureau" y "buro" NO: tambien son lampara y mesilla */
+ 'escritorio':['escritorio','desk(?! ?lamp| ?organi| ?chair| ?fan| ?clock| ?tidy| ?set)',
+   'writing table','bureau plat','secreter','secretaire','schreibtisch','scrivania',
+   'mesa de despacho','mesa de oficina','mesa de dibujo','mesa de arquitecto',
+   'drafting table','architects? table','zeichentisch','eiermann','tecnigrafo'],
  'luz':['lampara','flexo','aplique','candelabro','farol','plafon','luminaria','quinque'],
  'escultura':['escultura','busto','talla','figura','relieve','estatua'],
  'pintura':['oleo','acuarela','pintura','lienzo','cuadro','gouache','temple'],
@@ -375,12 +381,14 @@ const TIPOS={
    izquierda: sin el, "chest" saltaba en "Manchester" y "mesa" en "remesa". */
 /* El mueble siempre se nombra en el titulo. En la descripcion "armario" o
    "cabinet" aparecen en cuadros y en cuencos ("display cabinet"). */
-const SOLO_TITULO=new Set(['almacenaje']);
+const SOLO_TITULO=new Set(['almacenaje','escritorio']);
 /* Lo que nombra un mueble sin serlo: "Mid Century Dresser Jewelry Box",
    "Vanity Tray", "Miniature Tansu Chest". Se mira en el titulo. */
-const TIPOS_NO={almacenaje:/jewel|joyer|trinket|tray|bandeja|perfum|figurin|glasses|goblet|decanter|organi[sz]er|runner|key ?box|catch-?all|miniatur|1:6|lint brush|money ?box|handles? for|dish|knob|pomo|tirador|pattern|art for|frame|interior with|accessor|essentials|pants|valet|jars?\b|vanity set|powder|vase|hanging|lundby|\bmini\b|kitchen design/};
+const TIPOS_NO={almacenaje:/jewel|joyer|trinket|tray|bandeja|perfum|figurin|glasses|goblet|decanter|organi[sz]er|runner|key ?box|catch-?all|miniatur|1:6|lint brush|money ?box|handles? for|dish|knob|pomo|tirador|pattern|art for|frame|interior with|accessor|essentials|pants|valet|jars?\b|vanity set|powder|vase|hanging|lundby|\bmini\b|kitchen design/,
+  /* "objeto de escritorio", "sacapuntas vintage de escritorio": accesorios */
+  escritorio:/lamp|lampara|flexo|silla|chair|stoel|stuhl|taburete|stool|butaca|organi[sz]|reloj|clock|miniatur|joyero|sacapuntas|termometro|cenicero|ashtray|alfombrilla|\b(de|para) escritorio\b|objeto|accessor|desk set|vade|blotter/};
 /* y si declara medidas, un mueble de guardar mide al menos 35 cm por algun lado */
-const TIPOS_MIN_CM={almacenaje:35};
+const TIPOS_MIN_CM={almacenaje:35,escritorio:60};
 const _reTipos={};
 function reTipo(t){
   return _reTipos[t]||(_reTipos[t]=new RegExp('(?:^|[^a-z0-9])(?:'+(TIPOS[t]||['$^']).join('|')+')'));
@@ -390,7 +398,7 @@ const MATS=['roble','nogal','teca','palisandro','pino','haya','bronce','marmol',
 const EPOCAS=['1950','1960','1970','1980','s. XIX','s. XVIII'];
 const COLS=['blanco','negro','gris','rojo','azul','verde','amarillo','naranja','marron','dorado','cromado'];
 /* palabra con la que se busca cada tipo en las webs de fuera */
-const PRINCIPAL={almacenaje:'comoda',asiento:'silla',mesa:'mesa',luz:'lampara',
+const PRINCIPAL={almacenaje:'comoda',asiento:'silla',mesa:'mesa',escritorio:'escritorio',luz:'lampara',
   escultura:'escultura',pintura:'cuadro',estanteria:'estanteria',espejo:'espejo',
   alfombra:'alfombra',ceramica:'ceramica'};
 

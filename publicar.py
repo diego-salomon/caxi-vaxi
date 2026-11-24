@@ -27,6 +27,7 @@ Uso:
     .venv/bin/python publicar.py --enlace   apunta el enlace magico en config_local.py
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -50,7 +51,11 @@ def wrangler(*args, entrada=None):
 
 
 def hay_clave():
+    """True si CLAVE existe; "sesion" si wrangler no tiene sesion (caduca sola)."""
     r = wrangler("pages", "secret", "list", "--project-name", PROYECTO)
+    if r.returncode and re.search(r"not logged in|token has expired|authenticat|CLOUDFLARE_API_TOKEN",
+                                  (r.stderr or "") + (r.stdout or ""), re.I):
+        return "sesion"
     return r.returncode == 0 and "CLAVE" in r.stdout
 
 
@@ -126,7 +131,12 @@ if __name__ == "__main__":
         sys.exit("enlace magico apuntado en config_local.py (CAXIVAXI_ENLACE)")
     if not os.path.exists(os.path.join(WEB, "functions", "_middleware.js")):
         sys.exit("!! Falta web/functions/_middleware.js: sin puerta no se sube nada.")
-    if not hay_clave():
+    estado = hay_clave()
+    if estado == "sesion":
+        sys.exit("!! La sesion de Cloudflare caduco. No se sube nada.\n"
+                 "   Entra de nuevo con: cd web && npx wrangler@4 login --use-keyring "
+                 "--scopes account:read user:read pages:write")
+    if not estado:
         sys.exit("!! El proyecto no tiene la clave CLAVE en Cloudflare. No se sube nada.\n"
                  "   Ponla con: .venv/bin/python publicar.py --clave")
     if "--solo" not in sys.argv:

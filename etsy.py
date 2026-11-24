@@ -75,6 +75,9 @@ BUSQUEDAS = [
     "vintage chest of drawers", "mid century credenza", "vintage highboard",
     "vintage wardrobe", "mid century cabinet", "vintage bar cabinet",
     "vintage kommode", "tansu chest",
+    # escritorios (busqueda del 2026-11-24)
+    "mid century desk", "vintage writing desk", "teak desk",
+    "eiermann table", "drafting table vintage", "formica desk",
     # escultura y bustos, lo que busca ahora
     "bronze bust", "brutalist sculpture", "marble sculpture vintage",
     # disenadores que salieron de sus favoritos y de La Basilica
